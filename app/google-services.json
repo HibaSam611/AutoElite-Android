@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "285069637022",
+    "project_id": "autoelite-62100",
+    "storage_bucket": "autoelite-62100.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:285069637022:android:3fdf6bd486556e8bf4d28f",
+        "android_client_info": {
+          "package_name": "com.example.autoelite"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDiZH5LedWuNSuQU8jw3-TvTbUeZkeI28E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:285069637022:android:07acb2cd7a820415f4d28f",
+        "android_client_info": {
+          "package_name": "com.example.autoelite_android"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDiZH5LedWuNSuQU8jw3-TvTbUeZkeI28E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
