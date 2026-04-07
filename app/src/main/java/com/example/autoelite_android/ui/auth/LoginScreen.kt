@@ -67,7 +67,7 @@ fun LoginScreen(
 
             Spacer(Modifier.height(48.dp))
 
-            // ── Email ─────────────────────────────────────────────────────────
+            // Email
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -81,7 +81,7 @@ fun LoginScreen(
 
             Spacer(Modifier.height(12.dp))
 
-            // ── Contraseña ───────────────────────────────────────────────────
+            //  Contraseña
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -103,7 +103,7 @@ fun LoginScreen(
                 isError = uiState is AuthUiState.Error
             )
 
-            // ── Error ─────────────────────────────────────────────────────────
+            // Error
             if (uiState is AuthUiState.Error) {
                 Spacer(Modifier.height(8.dp))
                 Text(
@@ -116,7 +116,7 @@ fun LoginScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            // ── Botón Login ───────────────────────────────────────────────────
+            // Botón Login
             Button(
                 onClick = { viewModel.login(email, password) },
                 modifier = Modifier
@@ -137,7 +137,7 @@ fun LoginScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // ── Ir a Registro ─────────────────────────────────────────────────
+            // Ir a Registro
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("¿No tienes cuenta?", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 TextButton(onClick = onNavigateToRegister) {
