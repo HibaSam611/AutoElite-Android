@@ -1,4 +1,4 @@
-package com.example.autoelite.ui.home
+package com.example.autoelite_android.ui.home
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState

@@ -1,6 +1,6 @@
-package com.example.autoelite_android.data.network
+package com.example.autoelite_android.network
 
-import com.example.autoelite_android.data.model.*
+import com.example.autoelite_android.model.*
 import retrofit2.Response
 import retrofit2.http.*
 

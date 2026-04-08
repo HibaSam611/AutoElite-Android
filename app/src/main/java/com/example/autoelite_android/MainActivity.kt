@@ -9,7 +9,6 @@ import com.example.autoelite_android.navigation.NavGraph
 import com.example.autoelite_android.ui.theme.AutoEliteAndroidTheme
 import com.google.firebase.auth.FirebaseAuth
 
-
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -1,4 +1,4 @@
-package com.example.autoelite_android.data.model
+package com.example.autoelite_android.model
 
 data class RegisterRequest(
     val firebaseUid: String,

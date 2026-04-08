@@ -1,6 +1,5 @@
-package com.example.autoelite.network
+package com.example.autoelite_android.network
 
-import com.example.autoelite_android.data.network.ApiService
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
@@ -18,10 +17,10 @@ object RetrofitClient {
 
     private val client = OkHttpClient.Builder()
         .addInterceptor(loggingInterceptor)
-        // Aquí puedes añadir un interceptor para pasar el token de Firebase
+        // Aquí se puede añadir un interceptor para pasar el token de Firebase
         .addInterceptor { chain ->
             val original = chain.request()
-            // TODO: añadir token Firebase Auth en la cabecera
+            // !!!!añadir token Firebase Auth en la cabecera
             val token = runBlocking { FirebaseAuth.getInstance().currentUser?.getIdToken(false)?.await()?.token }
             val request = original.newBuilder()
                 .header("Authorization", "Bearer $token")

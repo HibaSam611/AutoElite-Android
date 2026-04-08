@@ -1,16 +1,16 @@
-package com.example.autoelite.navigation
+package com.example.autoelite_android.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.autoelite_android.ui.perfil.PerfilScreen
 import com.example.autoelite_android.ui.auth.RegisterScreen
 import com.example.autoelite_android.ui.auth.LoginScreen
 import com.example.autoelite_android.ui.citas.CitasScreen
 import com.example.autoelite_android.ui.crm.CrmScreen
 import com.example.autoelite_android.ui.facturacion.FacturacionScreen
 import com.example.autoelite_android.ui.home.HomeScreen
-import com.example.autoelite_android.ui.perfil.PerfilScreen
 import com.example.autoelite_android.ui.reparaciones.ReparacionesScreen
 import com.example.autoelite_android.ui.vehiculos.VehiculosScreen
 
