@@ -42,4 +42,7 @@ interface ApiService {
         @Header("X-Firebase-UID") uid: String,
         @Body req: ValoracionRequest
     ): Response<Any>
+
+    @PUT("api/citas/{id}/cancelar")
+    suspend fun cancelarCita(@Path("id") id: Long): Response<CitaResponse>
 }

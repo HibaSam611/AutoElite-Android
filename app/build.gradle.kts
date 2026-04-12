@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.autoelite"
+    namespace = "com.example.autoelite_android"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.autoelite"
+        applicationId = "com.example.autoelite_android"
         minSdk = 26
         targetSdk = 36
         versionCode = 1

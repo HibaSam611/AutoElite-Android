@@ -9,21 +9,22 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClient {
-    private const val BASE_URL = "http://1192.168.1.163:8080/api"
 
-    private val loggingInterceptor = HttpLoggingInterceptor().apply {
-        level = HttpLoggingInterceptor.Level.BODY
-    }
+    // Emulador Android → 10.0.2.2
+    // Móvil físico → IP de tu PC en la WiFi (ej: 192.168.1.163)
+    private const val BASE_URL = "http://10.0.2.2:8080/"
 
     private val client = OkHttpClient.Builder()
-        .addInterceptor(loggingInterceptor)
-        // Aquí se puede añadir un interceptor para pasar el token de Firebase
+        .addInterceptor(HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BODY
+        })
         .addInterceptor { chain ->
-            val original = chain.request()
-            // !!!!añadir token Firebase Auth en la cabecera
-            val token = runBlocking { FirebaseAuth.getInstance().currentUser?.getIdToken(false)?.await()?.token }
-            val request = original.newBuilder()
-                .header("Authorization", "Bearer $token")
+            val token = runBlocking {
+                FirebaseAuth.getInstance().currentUser
+                    ?.getIdToken(false)?.await()?.token
+            }
+            val request = chain.request().newBuilder()
+                .apply { if (token != null) header("Authorization", "Bearer $token") }
                 .build()
             chain.proceed(request)
         }

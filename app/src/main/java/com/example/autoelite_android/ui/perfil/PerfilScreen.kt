@@ -17,6 +17,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.autoelite_android.navigation.AutoEliteBottomBar
 import com.example.autoelite_android.ui.auth.AuthViewModel
+import com.example.autoelite_android.util.SessionManager
 import com.google.firebase.auth.FirebaseAuth
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -28,6 +29,10 @@ fun PerfilScreen(
 ) {
     val user = FirebaseAuth.getInstance().currentUser
     var showLogoutDialog by remember { mutableStateOf(false) }
+
+    val nombre = user?.displayName ?: SessionManager.nombre.ifBlank { "Usuario" }
+    val email  = user?.email ?: SessionManager.email.ifBlank { "" }
+    val puntos = SessionManager.puntos
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Mi perfil") }) },
@@ -47,38 +52,41 @@ fun PerfilScreen(
                 modifier = Modifier.size(96.dp).clip(CircleShape),
                 color = MaterialTheme.colorScheme.primaryContainer
             ) {
-                Icon(
-                    Icons.Default.Person,
-                    contentDescription = null,
+                Icon(Icons.Default.Person, null,
                     modifier = Modifier.padding(16.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
+                    tint = MaterialTheme.colorScheme.primary)
             }
 
             Spacer(Modifier.height(12.dp))
-            Text(user?.displayName ?: "Usuario", fontWeight = FontWeight.Bold, fontSize = 22.sp)
-            Text(user?.email ?: "", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+            Text(nombre, fontWeight = FontWeight.Bold, fontSize = 22.sp)
+            Text(email, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(8.dp))
 
-            // Secciones
+            // Chip de puntos
+            SuggestionChip(
+                onClick = {},
+                label = { Text("⭐ $puntos puntos acumulados", fontSize = 13.sp) }
+            )
+
+            Spacer(Modifier.height(24.dp))
+
             ProfileSection(title = "Cuenta") {
-                ProfileRow(Icons.Default.Edit, "Editar datos personales") { /* TODO */ }
-                ProfileRow(Icons.Default.Lock, "Cambiar contraseña") { /* TODO */ }
-                ProfileRow(Icons.Default.Notifications, "Notificaciones") { /* TODO */ }
+                ProfileRow(Icons.Default.Edit, "Editar datos personales") { }
+                ProfileRow(Icons.Default.Lock, "Cambiar contraseña") { }
+                ProfileRow(Icons.Default.Notifications, "Notificaciones") { }
             }
 
             Spacer(Modifier.height(12.dp))
 
             ProfileSection(title = "Soporte") {
-                ProfileRow(Icons.Default.LocationOn, "Localización del taller") { /* Google Maps */ }
-                ProfileRow(Icons.Default.Phone, "Contactar con el taller") { /* TODO */ }
-                ProfileRow(Icons.Default.Info, "Acerca de AutoElite") { /* TODO */ }
+                ProfileRow(Icons.Default.LocationOn, "Localización del taller") { }
+                ProfileRow(Icons.Default.Phone, "Contactar con el taller") { }
+                ProfileRow(Icons.Default.Info, "Acerca de AutoElite") { }
             }
 
             Spacer(Modifier.height(24.dp))
 
-            // cerrar session
             OutlinedButton(
                 onClick = { showLogoutDialog = true },
                 modifier = Modifier.fillMaxWidth(),
@@ -86,7 +94,7 @@ fun PerfilScreen(
                     contentColor = MaterialTheme.colorScheme.error
                 )
             ) {
-                Icon(Icons.Default.Logout, contentDescription = null)
+                Icon(Icons.Default.Logout, null)
                 Spacer(Modifier.width(8.dp))
                 Text("Cerrar sesión")
             }
@@ -130,10 +138,11 @@ private fun ProfileRow(icon: ImageVector, label: String, onClick: () -> Unit) {
         modifier = Modifier.fillMaxWidth(),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
     ) {
-        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
+        Icon(icon, null, tint = MaterialTheme.colorScheme.onSurface)
         Spacer(Modifier.width(12.dp))
-        Text(label, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
-        Icon(Icons.Default.ChevronRight, contentDescription = null,
+        Text(label, color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f))
+        Icon(Icons.Default.ChevronRight, null,
             tint = MaterialTheme.colorScheme.outline)
     }
 }

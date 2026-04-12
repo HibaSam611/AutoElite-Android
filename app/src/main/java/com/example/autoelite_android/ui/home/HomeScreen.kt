@@ -6,31 +6,45 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.autoelite_android.navigation.AutoEliteBottomBar
 import com.example.autoelite_android.navigation.Screen
+import com.example.autoelite_android.ui.citas.CitasViewModel
+import com.example.autoelite_android.util.SessionManager
 import com.google.firebase.auth.FirebaseAuth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(navController: NavController) {
-    val user = FirebaseAuth.getInstance().currentUser
-    val nombre = user?.displayName?.split(" ")?.firstOrNull() ?: "Cliente"
+fun HomeScreen(
+    navController: NavController,
+    citasViewModel: CitasViewModel = viewModel()
+) {
+    val user   = FirebaseAuth.getInstance().currentUser
+    val nombre = user?.displayName?.split(" ")?.firstOrNull()
+        ?: SessionManager.nombre.ifBlank { "Cliente" }
+
+    val citas by citasViewModel.citas.collectAsState()
+    val proximaCita = citas.firstOrNull {
+        it.estado == "PENDIENTE" || it.estado == "CONFIRMADA"
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("AutoElite") },
                 actions = {
-                    IconButton(onClick = { navController.navigate(Screen.Perfil.route) }) {
-                        Icon(Icons.Default.AccountCircle, contentDescription = "Perfil")
+                    IconButton(onClick = {
+                        navController.navigate(Screen.Perfil.route)
+                    }) {
+                        Icon(Icons.Default.AccountCircle, "Perfil")
                     }
                 }
             )
@@ -44,65 +58,44 @@ fun HomeScreen(navController: NavController) {
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-            //Saludo
-            Text(
-                text = "Hola, $nombre 👋",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "¿Qué necesitas hoy?",
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Text("Hola, $nombre 👋", fontSize = 24.sp, fontWeight = FontWeight.Bold)
+            Text("¿Qué necesitas hoy?", fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
 
             Spacer(Modifier.height(24.dp))
 
-            // Tarjetas de acceso rápido
             Text("Acceso rápido", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
             Spacer(Modifier.height(12.dp))
 
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                QuickCard(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Default.CalendarMonth,
-                    title = "Pedir cita",
-                    subtitle = "Agenda tu próxima visita",
-                    onClick = { navController.navigate(Screen.Citas.route) }
-                )
-                QuickCard(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Default.Build,
-                    title = "Mis reparaciones",
-                    subtitle = "Estado en tiempo real",
-                    onClick = { navController.navigate(Screen.Reparaciones.route) }
-                )
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                QuickCard(Modifier.weight(1f), Icons.Default.CalendarMonth,
+                    "Pedir cita", "Agenda tu próxima visita") {
+                    navController.navigate(Screen.Citas.route)
+                }
+                QuickCard(Modifier.weight(1f), Icons.Default.Build,
+                    "Reparaciones", "Estado en tiempo real") {
+                    navController.navigate(Screen.Reparaciones.route)
+                }
             }
 
             Spacer(Modifier.height(12.dp))
 
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                QuickCard(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Default.DirectionsCar,
-                    title = "Mis vehículos",
-                    subtitle = "Gestiona tu flota",
-                    onClick = { navController.navigate(Screen.Vehiculos.route)}
-                )
-                QuickCard(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Default.Star,
-                    title = "Puntos CRM",
-                    subtitle = "Canjea tus recompensas",
-                    onClick = { navController.navigate(Screen.Crm.route) }
-                )
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                QuickCard(Modifier.weight(1f), Icons.Default.DirectionsCar,
+                    "Mis vehículos", "Gestiona tu flota") {
+                    navController.navigate(Screen.Vehiculos.route)
+                }
+                QuickCard(Modifier.weight(1f), Icons.Default.Star,
+                    "Puntos CRM", "Canjea tus recompensas") {
+                    navController.navigate(Screen.Crm.route)
+                }
             }
 
             Spacer(Modifier.height(24.dp))
 
-            // Próxima cita (placeholder)
             Text("Próxima cita", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
             Spacer(Modifier.height(8.dp))
+
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -113,20 +106,29 @@ fun HomeScreen(navController: NavController) {
                     modifier = Modifier.padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        Icons.Default.Event,
-                        contentDescription = null,
+                    Icon(Icons.Default.Event, null,
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(40.dp)
-                    )
+                        modifier = Modifier.size(40.dp))
                     Spacer(Modifier.width(12.dp))
-                    Column {
-                        Text("No tienes citas programadas", fontWeight = FontWeight.Medium)
-                        Text(
-                            "Pulsa 'Pedir cita' para agendar una visita",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    if (proximaCita != null) {
+                        Column {
+                            Text("${proximaCita.fecha} a las ${proximaCita.hora}",
+                                fontWeight = FontWeight.Medium)
+                            Text(proximaCita.tipo ?: "Servicio general",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("Estado: ${proximaCita.estado}",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.primary)
+                        }
+                    } else {
+                        Column {
+                            Text("No tienes citas programadas",
+                                fontWeight = FontWeight.Medium)
+                            Text("Pulsa 'Pedir cita' para agendar una visita",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
                 }
             }
@@ -136,24 +138,19 @@ fun HomeScreen(navController: NavController) {
 
 @Composable
 private fun QuickCard(
-    modifier: Modifier = Modifier,
+    modifier: Modifier,
     icon: ImageVector,
     title: String,
     subtitle: String,
     onClick: () -> Unit
 ) {
-    Card(
-        onClick = onClick,
-        modifier = modifier
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.Start
-        ) {
-            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+    Card(onClick = onClick, modifier = modifier) {
+        Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.Start) {
+            Icon(icon, null, tint = MaterialTheme.colorScheme.primary)
             Spacer(Modifier.height(8.dp))
             Text(title, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-            Text(subtitle, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(subtitle, fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

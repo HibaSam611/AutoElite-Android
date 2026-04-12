@@ -29,11 +29,12 @@ fun RegisterScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     var nombre          by remember { mutableStateOf("") }
+    var apellidos       by remember { mutableStateOf("") }
     var email           by remember { mutableStateOf("") }
     var password        by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var showPass        by remember { mutableStateOf(false) }
-    var showConfirmPass by remember { mutableStateOf(false) }
+    var showConfirm     by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState) {
         if (uiState is AuthUiState.Success) {
@@ -62,127 +63,91 @@ fun RegisterScreen(
                 .padding(horizontal = 32.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "Únete a AutoElite",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Text(
-                text = "Crea tu cuenta para gestionar tus citas y vehículos",
-                fontSize = 13.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
+            Text("Únete a AutoElite", fontSize = 24.sp,
+                fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Text("Crea tu cuenta para gestionar tus citas y vehículos",
+                fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center)
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(24.dp))
 
-            // Nombre
-            OutlinedTextField(
-                value = nombre,
-                onValueChange = { nombre = it },
-                label = { Text("Nombre completo") },
-                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
+            OutlinedTextField(value = nombre, onValueChange = { nombre = it },
+                label = { Text("Nombre") },
+                leadingIcon = { Icon(Icons.Default.Person, null) },
+                singleLine = true, modifier = Modifier.fillMaxWidth())
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(10.dp))
 
-            // Email
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
+            OutlinedTextField(value = apellidos, onValueChange = { apellidos = it },
+                label = { Text("Apellidos") },
+                leadingIcon = { Icon(Icons.Default.Person, null) },
+                singleLine = true, modifier = Modifier.fillMaxWidth())
+
+            Spacer(Modifier.height(10.dp))
+
+            OutlinedTextField(value = email, onValueChange = { email = it },
                 label = { Text("Correo electrónico") },
-                leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
+                leadingIcon = { Icon(Icons.Default.Email, null) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
+                singleLine = true, modifier = Modifier.fillMaxWidth())
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(10.dp))
 
-            // ºContraseña
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
+            OutlinedTextField(value = password, onValueChange = { password = it },
                 label = { Text("Contraseña") },
-                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+                leadingIcon = { Icon(Icons.Default.Lock, null) },
                 trailingIcon = {
                     IconButton(onClick = { showPass = !showPass }) {
-                        Icon(
-                            if (showPass) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                            contentDescription = null
-                        )
+                        Icon(if (showPass) Icons.Default.VisibilityOff
+                        else Icons.Default.Visibility, null)
                     }
                 },
                 visualTransformation = if (showPass) VisualTransformation.None
                 else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
+                singleLine = true, modifier = Modifier.fillMaxWidth())
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(10.dp))
 
-            // Confirmar contraseña
-            OutlinedTextField(
-                value = confirmPassword,
+            OutlinedTextField(value = confirmPassword,
                 onValueChange = { confirmPassword = it },
                 label = { Text("Confirmar contraseña") },
-                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+                leadingIcon = { Icon(Icons.Default.Lock, null) },
                 trailingIcon = {
-                    IconButton(onClick = { showConfirmPass = !showConfirmPass }) {
-                        Icon(
-                            if (showConfirmPass) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                            contentDescription = null
-                        )
+                    IconButton(onClick = { showConfirm = !showConfirm }) {
+                        Icon(if (showConfirm) Icons.Default.VisibilityOff
+                        else Icons.Default.Visibility, null)
                     }
                 },
-                visualTransformation = if (showConfirmPass) VisualTransformation.None
+                visualTransformation = if (showConfirm) VisualTransformation.None
                 else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                isError = confirmPassword.isNotEmpty() && password != confirmPassword
-            )
+                singleLine = true, modifier = Modifier.fillMaxWidth(),
+                isError = confirmPassword.isNotEmpty() && password != confirmPassword)
 
             if (confirmPassword.isNotEmpty() && password != confirmPassword) {
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    "Las contraseñas no coinciden",
-                    color = MaterialTheme.colorScheme.error,
-                    fontSize = 12.sp
-                )
+                Text("Las contraseñas no coinciden",
+                    color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
             }
 
-            // Error general
             if (uiState is AuthUiState.Error) {
                 Spacer(Modifier.height(8.dp))
-                Text(
-                    text = (uiState as AuthUiState.Error).message,
+                Text((uiState as AuthUiState.Error).message,
                     color = MaterialTheme.colorScheme.error,
-                    fontSize = 13.sp,
-                    textAlign = TextAlign.Center
-                )
+                    fontSize = 13.sp, textAlign = TextAlign.Center)
             }
 
-            Spacer(Modifier.height(28.dp))
+            Spacer(Modifier.height(24.dp))
 
-            // Boton Registrarse
             Button(
-                onClick = { viewModel.register(nombre, email, password, confirmPassword) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
+                onClick = { viewModel.register(nombre, apellidos, email,
+                    password, confirmPassword) },
+                modifier = Modifier.fillMaxWidth().height(52.dp),
                 enabled = uiState !is AuthUiState.Loading
             ) {
                 if (uiState is AuthUiState.Loading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(22.dp),
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        strokeWidth = 2.dp
-                    )
+                    CircularProgressIndicator(modifier = Modifier.size(22.dp),
+                        color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
                 } else {
                     Text("Crear cuenta", fontSize = 16.sp)
                 }
@@ -191,12 +156,10 @@ fun RegisterScreen(
             Spacer(Modifier.height(16.dp))
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("¿Ya tienes cuenta?", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                TextButton(onClick = onNavigateToLogin) {
-                    Text("Inicia sesión")
-                }
+                Text("¿Ya tienes cuenta?",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                TextButton(onClick = onNavigateToLogin) { Text("Inicia sesión") }
             }
         }
     }
 }
-
