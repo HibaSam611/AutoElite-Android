@@ -25,16 +25,16 @@ class ReparacionesViewModel : ViewModel() {
     init { cargarReparaciones() }
 
     fun cargarReparaciones() {
+        val clienteId = SessionManager.clienteId
+        if (clienteId == -1L) return
+
         viewModelScope.launch {
             _loading.value = true
             try {
-                val response = api.getReparaciones()
+                // Usa el endpoint filtrado por clienteId (seguro)
+                val response = api.getReparacionesByCliente(clienteId)
                 if (response.isSuccessful) {
-                    // Filtramos solo las del cliente actual
-                    val clienteNombre = SessionManager.nombre
-                    _reparaciones.value = response.body()
-                        ?.filter { it.clienteNombre.contains(clienteNombre, ignoreCase = true) }
-                        ?: emptyList()
+                    _reparaciones.value = response.body() ?: emptyList()
                 } else {
                     _error.value = "Error al cargar reparaciones"
                 }

@@ -25,15 +25,16 @@ class FacturacionViewModel : ViewModel() {
     init { cargarFacturas() }
 
     fun cargarFacturas() {
+        val clienteId = SessionManager.clienteId
+        if (clienteId == -1L) return
+
         viewModelScope.launch {
             _loading.value = true
             try {
-                val response = api.getFacturas()
+                // Usa el endpoint filtrado por clienteId (seguro)
+                val response = api.getFacturasByCliente(clienteId)
                 if (response.isSuccessful) {
-                    val clienteNombre = SessionManager.nombre
-                    _facturas.value = response.body()
-                        ?.filter { it.clienteNombre.contains(clienteNombre, ignoreCase = true) }
-                        ?: emptyList()
+                    _facturas.value = response.body() ?: emptyList()
                 } else {
                     _error.value = "Error al cargar facturas"
                 }

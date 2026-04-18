@@ -46,8 +46,10 @@ class AuthViewModel : ViewModel() {
     }
 
     // Registro
-    fun register(nombre: String, apellidos: String, email: String,
-                 password: String, confirmPassword: String) {
+    fun register(
+        nombre: String, apellidos: String, email: String,
+        password: String, confirmPassword: String
+    ) {
         when {
             nombre.isBlank() || email.isBlank() || password.isBlank() ->
                 _uiState.value = AuthUiState.Error("Rellena todos los campos")
@@ -58,18 +60,15 @@ class AuthViewModel : ViewModel() {
             else -> viewModelScope.launch {
                 _uiState.value = AuthUiState.Loading
                 try {
-                    // 1. Crear en Firebase
                     val result = auth.createUserWithEmailAndPassword(email, password).await()
                     val uid = result.user?.uid ?: throw Exception("UID no disponible")
 
-                    // 2. Actualizar displayName en Firebase
                     result.user?.updateProfile(
                         com.google.firebase.auth.UserProfileChangeRequest.Builder()
                             .setDisplayName("$nombre $apellidos")
                             .build()
                     )?.await()
 
-                    // 3. Registrar en el backend
                     val response = api.register(
                         RegisterRequest(
                             firebaseUid = uid,
@@ -84,7 +83,6 @@ class AuthViewModel : ViewModel() {
                         cargarSesion()
                         _uiState.value = AuthUiState.Success
                     } else {
-                        // Si falla el backend, borramos el usuario de Firebase
                         result.user?.delete()?.await()
                         _uiState.value = AuthUiState.Error("Error al registrar en el sistema")
                     }
@@ -95,7 +93,7 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    // Cargar datos del cliente en sesión
+    // Cargar datos del cliente en sesión (persiste en DataStore)
     private suspend fun cargarSesion() {
         try {
             val uid = auth.currentUser?.uid ?: return
@@ -106,7 +104,6 @@ class AuthViewModel : ViewModel() {
                 SessionManager.nombre    = usuario.nombre
                 SessionManager.email     = usuario.email
 
-                // Cargar clienteId si es CLIENTE
                 if (usuario.rol == "CLIENTE") {
                     val clientes = api.getClientes()
                     if (clientes.isSuccessful) {
@@ -119,7 +116,7 @@ class AuthViewModel : ViewModel() {
                     }
                 }
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             // No bloqueamos el login si falla la carga de sesión
         }
     }
@@ -140,8 +137,7 @@ class AuthViewModel : ViewModel() {
 
     fun logout() {
         auth.signOut()
-        SessionManager.clienteId = -1L
-        SessionManager.usuarioId = -1L
+        SessionManager.clear()   // Limpia DataStore + caché
         _uiState.value = AuthUiState.Idle
     }
 
