@@ -17,14 +17,21 @@ object SessionManager {
     private lateinit var dataStore: DataStore<Preferences>
     private val scope = CoroutineScope(Dispatchers.IO)
 
-    // Keys
+    // ── Keys de sesión ──
     private val KEY_CLIENTE_ID = longPreferencesKey("cliente_id")
     private val KEY_USUARIO_ID = longPreferencesKey("usuario_id")
     private val KEY_NOMBRE     = stringPreferencesKey("nombre")
+    private val KEY_APELLIDOS  = stringPreferencesKey("apellidos")
     private val KEY_EMAIL      = stringPreferencesKey("email")
+    private val KEY_TELEFONO   = stringPreferencesKey("telefono")
     private val KEY_PUNTOS     = intPreferencesKey("puntos")
 
-    // acceso síncrono para el resto de la app
+    // ── Keys de notificaciones ──
+    private val KEY_NOTIF_CITAS        = booleanPreferencesKey("notif_citas")
+    private val KEY_NOTIF_REPARACIONES = booleanPreferencesKey("notif_reparaciones")
+    private val KEY_NOTIF_PROMOCIONES  = booleanPreferencesKey("notif_promociones")
+
+    // ── Cached values ──
     var clienteId: Long = -1L
         set(value) { field = value; persist(KEY_CLIENTE_ID, value) }
 
@@ -34,43 +41,69 @@ object SessionManager {
     var nombre: String = ""
         set(value) { field = value; persist(KEY_NOMBRE, value) }
 
+    var apellidos: String = ""
+        set(value) { field = value; persist(KEY_APELLIDOS, value) }
+
     var email: String = ""
         set(value) { field = value; persist(KEY_EMAIL, value) }
+
+    var telefono: String = ""
+        set(value) { field = value; persist(KEY_TELEFONO, value) }
 
     var puntos: Int = 0
         set(value) { field = value; persist(KEY_PUNTOS, value) }
 
+    var notifCitas: Boolean = true
+        set(value) { field = value; persist(KEY_NOTIF_CITAS, value) }
+
+    var notifReparaciones: Boolean = true
+        set(value) { field = value; persist(KEY_NOTIF_REPARACIONES, value) }
+
+    var notifPromociones: Boolean = false
+        set(value) { field = value; persist(KEY_NOTIF_PROMOCIONES, value) }
+
     /**
-     * Llamar una vez desde MainActivity.onCreate() ANTES de usar cualquier propiedad.
-     * Carga los valores guardados en DataStore al caché en memoria.
+     * Llamar una vez desde MainActivity.onCreate()
      */
     fun init(context: Context) {
         dataStore = context.dataStore
         runBlocking {
             val prefs = dataStore.data.first()
-            clienteId = prefs[KEY_CLIENTE_ID] ?: -1L
-            usuarioId = prefs[KEY_USUARIO_ID] ?: -1L
-            nombre    = prefs[KEY_NOMBRE]     ?: ""
-            email     = prefs[KEY_EMAIL]      ?: ""
-            puntos    = prefs[KEY_PUNTOS]     ?: 0
+            clienteId  = prefs[KEY_CLIENTE_ID]  ?: -1L
+            usuarioId  = prefs[KEY_USUARIO_ID]  ?: -1L
+            nombre     = prefs[KEY_NOMBRE]      ?: ""
+            apellidos  = prefs[KEY_APELLIDOS]   ?: ""
+            email      = prefs[KEY_EMAIL]       ?: ""
+            telefono   = prefs[KEY_TELEFONO]    ?: ""
+            puntos     = prefs[KEY_PUNTOS]      ?: 0
+            notifCitas        = prefs[KEY_NOTIF_CITAS]        ?: true
+            notifReparaciones = prefs[KEY_NOTIF_REPARACIONES] ?: true
+            notifPromociones  = prefs[KEY_NOTIF_PROMOCIONES]  ?: false
         }
     }
 
-    /**
-     * Limpia toda la sesión (logout).
-     */
     fun clear() {
-        clienteId = -1L
-        usuarioId = -1L
-        nombre    = ""
-        email     = ""
-        puntos    = 0
+        clienteId  = -1L
+        usuarioId  = -1L
+        nombre     = ""
+        apellidos  = ""
+        email      = ""
+        telefono   = ""
+        puntos     = 0
+        // No limpiamos preferencias de notificaciones en logout
         scope.launch {
-            dataStore.edit { it.clear() }
+            dataStore.edit { prefs ->
+                prefs.remove(KEY_CLIENTE_ID)
+                prefs.remove(KEY_USUARIO_ID)
+                prefs.remove(KEY_NOMBRE)
+                prefs.remove(KEY_APELLIDOS)
+                prefs.remove(KEY_EMAIL)
+                prefs.remove(KEY_TELEFONO)
+                prefs.remove(KEY_PUNTOS)
+            }
         }
     }
 
-    // Helpers
     private fun <T> persist(key: Preferences.Key<T>, value: T) {
         if (!::dataStore.isInitialized) return
         scope.launch {

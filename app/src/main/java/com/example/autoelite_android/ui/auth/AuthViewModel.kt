@@ -3,6 +3,7 @@ package com.example.autoelite_android.ui.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.autoelite_android.model.RegisterRequest
+import com.example.autoelite_android.model.UpdateProfileRequest
 import com.example.autoelite_android.network.RetrofitClient
 import com.example.autoelite_android.util.SessionManager
 import com.google.firebase.auth.FirebaseAuth
@@ -27,7 +28,7 @@ class AuthViewModel : ViewModel() {
     private val _uiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
     val uiState: StateFlow<AuthUiState> = _uiState
 
-    // Login
+    // ── Login ──
     fun login(email: String, password: String) {
         if (email.isBlank() || password.isBlank()) {
             _uiState.value = AuthUiState.Error("Rellena todos los campos")
@@ -45,7 +46,7 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    // Registro
+    // ── Registro ──
     fun register(
         nombre: String, apellidos: String, email: String,
         password: String, confirmPassword: String
@@ -93,16 +94,87 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    // Cargar datos del cliente en sesión (persiste en DataStore)
+    // ── Actualizar perfil ──
+    fun updateProfile(
+        nombre: String,
+        apellidos: String,
+        telefono: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        val uid = auth.currentUser?.uid ?: return
+        viewModelScope.launch {
+            try {
+                val response = api.updateProfile(
+                    uid,
+                    UpdateProfileRequest(nombre, apellidos, telefono.ifBlank { null })
+                )
+                if (response.isSuccessful) {
+                    response.body()?.let { usuario ->
+                        SessionManager.nombre    = usuario.nombre
+                        SessionManager.apellidos = usuario.apellidos
+                        SessionManager.telefono  = usuario.telefono ?: ""
+
+                        // Actualizar displayName en Firebase
+                        auth.currentUser?.updateProfile(
+                            com.google.firebase.auth.UserProfileChangeRequest.Builder()
+                                .setDisplayName("${usuario.nombre} ${usuario.apellidos}")
+                                .build()
+                        )?.await()
+                    }
+                    onSuccess()
+                } else {
+                    onError("Error al actualizar el perfil")
+                }
+            } catch (e: Exception) {
+                onError(e.message ?: "Sin conexión")
+            }
+        }
+    }
+
+    // ── Cambiar contraseña ──
+    fun changePassword(
+        currentPassword: String,
+        newPassword: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        val user = auth.currentUser ?: return
+        val email = user.email ?: return
+
+        viewModelScope.launch {
+            try {
+                // Re-autenticar antes de cambiar la contraseña
+                val credential = com.google.firebase.auth.EmailAuthProvider
+                    .getCredential(email, currentPassword)
+                user.reauthenticate(credential).await()
+                user.updatePassword(newPassword).await()
+                onSuccess()
+            } catch (e: Exception) {
+                val msg = when {
+                    e.message?.contains("INVALID_LOGIN_CREDENTIALS") == true ->
+                        "Contraseña actual incorrecta"
+                    e.message?.contains("weak-password") == true ->
+                        "La nueva contraseña es demasiado débil"
+                    else -> e.message ?: "Error al cambiar contraseña"
+                }
+                onError(msg)
+            }
+        }
+    }
+
+    // ── Cargar sesión ──
     private suspend fun cargarSesion() {
         try {
             val uid = auth.currentUser?.uid ?: return
             val response = api.getMe(uid)
             if (response.isSuccessful) {
                 val usuario = response.body() ?: return
-                SessionManager.usuarioId = usuario.id
-                SessionManager.nombre    = usuario.nombre
-                SessionManager.email     = usuario.email
+                SessionManager.usuarioId  = usuario.id
+                SessionManager.nombre     = usuario.nombre
+                SessionManager.apellidos  = usuario.apellidos
+                SessionManager.email      = usuario.email
+                SessionManager.telefono   = usuario.telefono ?: ""
 
                 if (usuario.rol == "CLIENTE") {
                     val clientes = api.getClientes()
@@ -116,9 +188,7 @@ class AuthViewModel : ViewModel() {
                     }
                 }
             }
-        } catch (_: Exception) {
-            // No bloqueamos el login si falla la carga de sesión
-        }
+        } catch (_: Exception) { }
     }
 
     fun loginWithGoogle(idToken: String) {
@@ -137,7 +207,7 @@ class AuthViewModel : ViewModel() {
 
     fun logout() {
         auth.signOut()
-        SessionManager.clear()   // Limpia DataStore + caché
+        SessionManager.clear()
         _uiState.value = AuthUiState.Idle
     }
 

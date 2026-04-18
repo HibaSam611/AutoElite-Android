@@ -19,6 +19,12 @@ data class UsuarioResponse(
     val activo: Boolean
 )
 
+data class UpdateProfileRequest(
+    val nombre: String,
+    val apellidos: String,
+    val telefono: String?
+)
+
 data class ClienteResponse(
     val id: Long,
     val nombre: String,

@@ -13,6 +13,12 @@ interface ApiService {
     @GET("api/auth/me")
     suspend fun getMe(@Header("X-Firebase-UID") uid: String): Response<UsuarioResponse>
 
+    @PUT("api/auth/profile")
+    suspend fun updateProfile(
+        @Header("X-Firebase-UID") uid: String,
+        @Body req: UpdateProfileRequest
+    ): Response<UsuarioResponse>
+
     // ── Clientes ──
     @GET("api/clientes")
     suspend fun getClientes(): Response<List<ClienteResponse>>
@@ -42,7 +48,6 @@ interface ApiService {
     @GET("api/reparaciones")
     suspend fun getReparaciones(): Response<List<ReparacionResponse>>
 
-    /** Endpoint filtrado por cliente (añadir en el backend) */
     @GET("api/reparaciones/cliente/{clienteId}")
     suspend fun getReparacionesByCliente(
         @Path("clienteId") clienteId: Long
@@ -52,7 +57,6 @@ interface ApiService {
     @GET("api/facturas")
     suspend fun getFacturas(): Response<List<FacturaResponse>>
 
-    /** Endpoint filtrado por cliente (añadir en el backend) */
     @GET("api/facturas/cliente/{clienteId}")
     suspend fun getFacturasByCliente(
         @Path("clienteId") clienteId: Long
