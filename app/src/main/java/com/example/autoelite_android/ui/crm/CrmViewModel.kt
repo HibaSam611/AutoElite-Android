@@ -31,6 +31,7 @@ class CrmViewModel : ViewModel() {
                 if (response.isSuccessful) {
                     _cliente.value = response.body()
                         ?.find { it.id == clienteId }
+                    _cliente.value?.let { SessionManager.puntos = it.puntosAcumulados }
                 }
             } catch (e: Exception) {
                 // Usamos datos de SessionManager como fallback
