@@ -16,6 +16,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.autoelite_android.model.FacturaResponse
 import com.example.autoelite_android.navigation.AutoEliteBottomBar
+import androidx.compose.ui.platform.LocalContext
+import com.stripe.android.PaymentConfiguration
+import com.stripe.android.paymentsheet.PaymentSheet
+import com.stripe.android.paymentsheet.PaymentSheetResult
+import com.stripe.android.paymentsheet.rememberPaymentSheet
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -23,13 +28,56 @@ fun FacturacionScreen(
     navController: NavController,
     viewModel: FacturacionViewModel = viewModel()
 ) {
-    val facturas by viewModel.facturas.collectAsState()
-    val loading  by viewModel.loading.collectAsState()
-    val error    by viewModel.error.collectAsState()
+    val facturas       by viewModel.facturas.collectAsState()
+    val loading        by viewModel.loading.collectAsState()
+    val error          by viewModel.error.collectAsState()
+    val mensaje        by viewModel.mensaje.collectAsState()
+    val paymentConfig  by viewModel.paymentConfig.collectAsState()
+    val paymentLoading by viewModel.paymentLoading.collectAsState()
+    val context = LocalContext.current
+
+    // Stripe PaymentSheet
+    val paymentSheet = rememberPaymentSheet { result ->
+        when (result) {
+            is PaymentSheetResult.Completed -> {
+                viewModel.onPaymentSuccess(viewModel.lastClientSecret)
+            }
+            is PaymentSheetResult.Canceled -> {
+                viewModel.onPaymentCancelled()
+            }
+            is PaymentSheetResult.Failed -> {
+                viewModel.onPaymentError(result.error.localizedMessage)
+            }
+        }
+    }
+
+    // Cuando el backend devuelve el PaymentIntent, presentar PaymentSheet
+    LaunchedEffect(paymentConfig) {
+        paymentConfig?.let { config ->
+            // Inicializar Stripe con la publishable key del backend
+            PaymentConfiguration.init(context, config.publishableKey)
+
+            paymentSheet.presentWithPaymentIntent(
+                paymentIntentClientSecret = config.clientSecret,
+                configuration = PaymentSheet.Configuration(
+                    merchantDisplayName = "AutoElite",
+                    customer = PaymentSheet.CustomerConfiguration(
+                        id = config.customerId,
+                        ephemeralKeySecret = config.ephemeralKey
+                    ),
+                    allowsDelayedPaymentMethods = false
+                )
+            )
+            viewModel.clearPaymentConfig()
+        }
+    }
 
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(error) {
         error?.let { snackbarHostState.showSnackbar(it); viewModel.resetError() }
+    }
+    LaunchedEffect(mensaje) {
+        mensaje?.let { snackbarHostState.showSnackbar(it); viewModel.resetMensaje() }
     }
 
     Scaffold(
@@ -63,14 +111,24 @@ fun FacturacionScreen(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 contentPadding = PaddingValues(vertical = 16.dp)
             ) {
-                items(facturas) { FacturaCard(it) }
+                items(facturas) { factura ->
+                    FacturaCard(
+                        factura = factura,
+                        paymentLoading = paymentLoading,
+                        onPagar = { viewModel.iniciarPago(factura.id) }
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun FacturaCard(factura: FacturaResponse) {
+private fun FacturaCard(
+    factura: FacturaResponse,
+    paymentLoading: Boolean,
+    onPagar: () -> Unit
+) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column {
             Row(
@@ -88,6 +146,13 @@ private fun FacturaCard(factura: FacturaResponse) {
                     Text(factura.numeroFactura, fontWeight = FontWeight.Bold)
                     Text(factura.fecha, fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    factura.metodoPago?.let { metodo ->
+                        Text(
+                            "Método: $metodo",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                    }
                 }
                 Column(horizontalAlignment = Alignment.End) {
                     Text("${factura.total} €",
@@ -100,16 +165,29 @@ private fun FacturaCard(factura: FacturaResponse) {
                     )
                 }
             }
+
+            // Botón de pago con Stripe
             if (!factura.pagada) {
                 Button(
-                    onClick = { /* TODO: Stripe */ },
+                    onClick = onPagar,
+                    enabled = !paymentLoading,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
-                    Icon(Icons.Default.CreditCard, null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Pagar online")
+                    if (paymentLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text("Preparando pago…")
+                    } else {
+                        Icon(Icons.Default.CreditCard, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Pagar online")
+                    }
                 }
             }
         }

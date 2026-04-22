@@ -101,3 +101,32 @@ data class ValoracionRequest(
     val puntuacion: Short,
     val comentario: String?
 )
+
+// Stripe / Pagos
+data class PaymentIntentRequest(
+    val facturaId: Long
+)
+data class PaymentIntentResponse(
+    val clientSecret: String,
+    val ephemeralKey: String,
+    val customerId: String,
+    val publishableKey: String
+)
+
+data class PaymentConfirmRequest(
+    val facturaId: Long,
+    val paymentIntentId: String
+)
+
+// CRM – Canjear recompensas
+data class CanjearRecompensaRequest(
+    val clienteId: Long,
+    val puntosRequeridos: Int,
+    val recompensa: String
+)
+
+data class CanjearRecompensaResponse(
+    val exito: Boolean,
+    val puntosRestantes: Int,
+    val mensaje: String
+)

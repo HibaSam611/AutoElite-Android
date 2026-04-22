@@ -91,6 +91,15 @@ fun HomeScreen(
                 }
             }
 
+            Spacer(Modifier.height(12.dp))
+
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                QuickCard(Modifier.weight(1f), Icons.Default.Receipt,
+                    "Facturas", "Paga tus facturas online") {
+                    navController.navigate(Screen.Facturacion.route)
+                }
+            }
+
             Spacer(Modifier.height(24.dp))
 
             Text("Próxima cita", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)

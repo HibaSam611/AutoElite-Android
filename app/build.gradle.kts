@@ -71,10 +71,10 @@ dependencies {
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-messaging-ktx")
 
-    implementation("com.stripe:stripe-android:20.38.0")
+    implementation("com.stripe:stripe-android:21.2.0")
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
-    implementation("androidx.compose.material:material-icons-extended")    // ── Tests
+    implementation("androidx.compose.material:material-icons-extended")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

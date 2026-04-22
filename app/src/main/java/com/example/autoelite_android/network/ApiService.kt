@@ -6,7 +6,7 @@ import retrofit2.http.*
 
 interface ApiService {
 
-    // ── Auth ──
+    // Auth
     @POST("api/auth/register")
     suspend fun register(@Body req: RegisterRequest): Response<UsuarioResponse>
 
@@ -19,11 +19,11 @@ interface ApiService {
         @Body req: UpdateProfileRequest
     ): Response<UsuarioResponse>
 
-    // ── Clientes ──
+    // Clientes
     @GET("api/clientes")
     suspend fun getClientes(): Response<List<ClienteResponse>>
 
-    // ── Citas ──
+    // citas
     @GET("api/citas/cliente/{clienteId}")
     suspend fun getCitasByCliente(
         @Path("clienteId") clienteId: Long
@@ -35,7 +35,7 @@ interface ApiService {
     @PUT("api/citas/{id}/cancelar")
     suspend fun cancelarCita(@Path("id") id: Long): Response<CitaResponse>
 
-    // ── Vehículos ──
+    // Vehículos
     @GET("api/vehiculos/cliente/{clienteId}")
     suspend fun getVehiculosByCliente(
         @Path("clienteId") clienteId: Long
@@ -44,7 +44,7 @@ interface ApiService {
     @POST("api/vehiculos")
     suspend fun crearVehiculo(@Body req: VehiculoRequest): Response<VehiculoResponse>
 
-    // ── Reparaciones ──
+    // Reparaciones
     @GET("api/reparaciones")
     suspend fun getReparaciones(): Response<List<ReparacionResponse>>
 
@@ -53,7 +53,7 @@ interface ApiService {
         @Path("clienteId") clienteId: Long
     ): Response<List<ReparacionResponse>>
 
-    // ── Facturas ──
+    // Facturas
     @GET("api/facturas")
     suspend fun getFacturas(): Response<List<FacturaResponse>>
 
@@ -62,10 +62,27 @@ interface ApiService {
         @Path("clienteId") clienteId: Long
     ): Response<List<FacturaResponse>>
 
-    // ── Valoraciones ──
+    // Valoraciones
     @POST("api/valoraciones")
     suspend fun crearValoracion(
         @Header("X-Firebase-UID") uid: String,
         @Body req: ValoracionRequest
     ): Response<Any>
+
+    // Stripe – Pagos online
+    @POST("api/pagos/create-payment-intent")
+    suspend fun createPaymentIntent(
+        @Body req: PaymentIntentRequest
+    ): Response<PaymentIntentResponse>
+
+    @POST("api/pagos/confirmar")
+    suspend fun confirmarPago(
+        @Body req: PaymentConfirmRequest
+    ): Response<FacturaResponse>
+
+    // CRM – Canjear recompensas
+    @POST("api/crm/canjear")
+    suspend fun canjearRecompensa(
+        @Body req: CanjearRecompensaRequest
+    ): Response<CanjearRecompensaResponse>
 }
