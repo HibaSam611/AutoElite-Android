@@ -10,6 +10,7 @@ import com.example.autoelite_android.ui.auth.LoginScreen
 import com.example.autoelite_android.ui.citas.CitasScreen
 import com.example.autoelite_android.ui.crm.CrmScreen
 import com.example.autoelite_android.ui.facturacion.FacturacionScreen
+import com.example.autoelite_android.ui.historial.HistorialScreen
 import com.example.autoelite_android.ui.home.HomeScreen
 import com.example.autoelite_android.ui.reparaciones.ReparacionesScreen
 import com.example.autoelite_android.ui.vehiculos.VehiculosScreen
@@ -64,6 +65,9 @@ fun NavGraph(
         }
         composable(Screen.Crm.route) {
             CrmScreen(navController = navController)
+        }
+        composable(Screen.Historial.route) {
+            HistorialScreen(navController = navController)
         }
         composable(Screen.Perfil.route) {
             PerfilScreen(

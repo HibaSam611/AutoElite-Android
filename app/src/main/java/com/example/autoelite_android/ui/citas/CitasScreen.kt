@@ -1,7 +1,9 @@
 package com.example.autoelite_android.ui.citas
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -20,6 +22,14 @@ import com.example.autoelite_android.navigation.AutoEliteBottomBar
 import java.text.SimpleDateFormat
 import java.util.*
 
+private val estadosCita = listOf("PENDIENTE", "CONFIRMADA", "CANCELADA")
+private fun estadoLabel(estado: String) = when (estado) {
+    "PENDIENTE"  -> "Pendientes"
+    "CONFIRMADA" -> "Confirmadas"
+    "CANCELADA"  -> "Canceladas"
+    else -> estado
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CitasScreen(
@@ -30,7 +40,11 @@ fun CitasScreen(
     val vehiculos  by viewModel.vehiculos.collectAsState()
     val loading    by viewModel.loading.collectAsState()
     val error      by viewModel.error.collectAsState()
-    var showDialog by remember { mutableStateOf(false) }
+    val searchQuery   by viewModel.searchQuery.collectAsState()
+    val estadoFilter  by viewModel.estadoFilter.collectAsState()
+
+    var showDialog  by remember { mutableStateOf(false) }
+    var showSearch  by remember { mutableStateOf(false) }
 
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(error) {
@@ -41,7 +55,19 @@ fun CitasScreen(
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Mis citas") }) },
+        topBar = {
+            TopAppBar(
+                title = { Text("Mis citas") },
+                actions = {
+                    IconButton(onClick = { showSearch = !showSearch }) {
+                        Icon(
+                            if (showSearch) Icons.Default.SearchOff else Icons.Default.Search,
+                            contentDescription = "Buscar"
+                        )
+                    }
+                }
+            )
+        },
         bottomBar = { AutoEliteBottomBar(navController) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
@@ -52,49 +78,120 @@ fun CitasScreen(
             )
         }
     ) { paddingValues ->
-        when {
-            loading -> {
-                Box(
-                    Modifier.fillMaxSize().padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) { CircularProgressIndicator() }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            // Barra de búsqueda
+            AnimatedVisibility(visible = showSearch) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { viewModel.setSearch(it) },
+                    placeholder = { Text("Buscar por vehículo, tipo, fecha…") },
+                    leadingIcon = { Icon(Icons.Default.Search, null) },
+                    trailingIcon = {
+                        if (searchQuery.isNotBlank()) {
+                            IconButton(onClick = { viewModel.setSearch("") }) {
+                                Icon(Icons.Default.Clear, "Limpiar")
+                            }
+                        }
+                    },
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                )
             }
-            citas.isEmpty() -> {
-                Box(
-                    Modifier.fillMaxSize().padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            Icons.Default.CalendarMonth, null,
-                            modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.outline
-                        )
-                        Spacer(Modifier.height(12.dp))
-                        Text(
-                            "No tienes citas aún",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        TextButton(onClick = { showDialog = true }) {
-                            Text("Pedir una cita")
+
+            // Chips de filtro por estado
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(bottom = 8.dp)
+            ) {
+                item {
+                    FilterChip(
+                        selected = estadoFilter == null,
+                        onClick = { viewModel.setEstadoFilter(null) },
+                        label = { Text("Todas") },
+                        leadingIcon = if (estadoFilter == null) {{
+                            Icon(Icons.Default.Done, null, Modifier.size(16.dp))
+                        }} else null
+                    )
+                }
+                items(estadosCita) { estado ->
+                    FilterChip(
+                        selected = estadoFilter == estado,
+                        onClick = {
+                            viewModel.setEstadoFilter(
+                                if (estadoFilter == estado) null else estado
+                            )
+                        },
+                        label = { Text(estadoLabel(estado)) },
+                        leadingIcon = if (estadoFilter == estado) {{
+                            Icon(Icons.Default.Done, null, Modifier.size(16.dp))
+                        }} else null
+                    )
+                }
+            }
+
+            // Contenido
+            when {
+                loading -> {
+                    Box(
+                        Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) { CircularProgressIndicator() }
+                }
+                citas.isEmpty() -> {
+                    Box(
+                        Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                Icons.Default.CalendarMonth, null,
+                                modifier = Modifier.size(64.dp),
+                                tint = MaterialTheme.colorScheme.outline
+                            )
+                            Spacer(Modifier.height(12.dp))
+                            Text(
+                                if (searchQuery.isNotBlank() || estadoFilter != null)
+                                    "No se encontraron citas con esos filtros"
+                                else "No tienes citas aún",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            if (searchQuery.isBlank() && estadoFilter == null) {
+                                TextButton(onClick = { showDialog = true }) {
+                                    Text("Pedir una cita")
+                                }
+                            }
                         }
                     }
                 }
-            }
-            else -> {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                        .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                    contentPadding = PaddingValues(vertical = 16.dp)
-                ) {
-                    items(citas) { cita ->
-                        CitaCard(
-                            cita = cita,
-                            onCancelar = { viewModel.cancelarCita(cita.id) }
-                        )
+                else -> {
+                    // Contador de resultados
+                    Text(
+                        "${citas.size} cita${if (citas.size != 1) "s" else ""}",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                    )
+
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        contentPadding = PaddingValues(bottom = 88.dp)
+                    ) {
+                        items(citas) { cita ->
+                            CitaCard(
+                                cita = cita,
+                                onCancelar = { viewModel.cancelarCita(cita.id) }
+                            )
+                        }
                     }
                 }
             }
@@ -113,9 +210,7 @@ fun CitasScreen(
     }
 }
 
-// ─────────────────────────────────────────────────────────────
 // Card de cita
-// ─────────────────────────────────────────────────────────────
 @Composable
 private fun CitaCard(cita: CitaResponse, onCancelar: () -> Unit) {
     val estadoColor = when (cita.estado) {
@@ -172,9 +267,7 @@ private fun CitaCard(cita: CitaResponse, onCancelar: () -> Unit) {
     }
 }
 
-// ─────────────────────────────────────────────────────────────
 // Diálogo de nueva cita con DatePicker, TimePicker y Dropdown
-// ─────────────────────────────────────────────────────────────
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun NuevaCitaDialog(
@@ -184,11 +277,9 @@ private fun NuevaCitaDialog(
 ) {
     var descripcion by remember { mutableStateOf("") }
 
-    // ── Vehículo seleccionado ──
     var vehiculoSeleccionado by remember { mutableStateOf<VehiculoResponse?>(null) }
     var vehiculoExpanded     by remember { mutableStateOf(false) }
 
-    // ── Fecha ──
     var mostrarDatePicker by remember { mutableStateOf(false) }
     val datePickerState   = rememberDatePickerState()
     val fechaFormateada = remember(datePickerState.selectedDateMillis) {
@@ -198,7 +289,6 @@ private fun NuevaCitaDialog(
         } ?: ""
     }
 
-    // ── Hora ──
     var mostrarTimePicker by remember { mutableStateOf(false) }
     val timePickerState   = rememberTimePickerState(
         initialHour = 9,
@@ -208,19 +298,16 @@ private fun NuevaCitaDialog(
     val horaFormateada = remember(
         timePickerState.hour,
         timePickerState.minute,
-        mostrarTimePicker      // recalcular al cerrar el picker
+        mostrarTimePicker
     ) {
         String.format("%02d:%02d", timePickerState.hour, timePickerState.minute)
     }
 
-    // Diálogo principal
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Nueva cita") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-
-                // ── Dropdown de vehículos ──
                 ExposedDropdownMenuBox(
                     expanded = vehiculoExpanded,
                     onExpandedChange = { vehiculoExpanded = it }
@@ -235,9 +322,7 @@ private fun NuevaCitaDialog(
                         trailingIcon = {
                             ExposedDropdownMenuDefaults.TrailingIcon(expanded = vehiculoExpanded)
                         },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .menuAnchor()
+                        modifier = Modifier.fillMaxWidth().menuAnchor()
                     )
                     ExposedDropdownMenu(
                         expanded = vehiculoExpanded,
@@ -251,9 +336,7 @@ private fun NuevaCitaDialog(
                         } else {
                             vehiculos.forEach { v ->
                                 DropdownMenuItem(
-                                    text = {
-                                        Text("${v.marca} ${v.modelo} · ${v.matricula}")
-                                    },
+                                    text = { Text("${v.marca} ${v.modelo} · ${v.matricula}") },
                                     onClick = {
                                         vehiculoSeleccionado = v
                                         vehiculoExpanded = false
@@ -264,7 +347,6 @@ private fun NuevaCitaDialog(
                     }
                 }
 
-                // ── Selector de fecha ──
                 OutlinedTextField(
                     value = fechaFormateada,
                     onValueChange = {},
@@ -284,7 +366,6 @@ private fun NuevaCitaDialog(
                         }
                 )
 
-                // ── Selector de hora ──
                 OutlinedTextField(
                     value = horaFormateada,
                     onValueChange = {},
@@ -304,7 +385,6 @@ private fun NuevaCitaDialog(
                         }
                 )
 
-                // ── Descripción ──
                 OutlinedTextField(
                     value = descripcion,
                     onValueChange = { descripcion = it },
@@ -324,7 +404,6 @@ private fun NuevaCitaDialog(
             Button(
                 onClick = {
                     val v = vehiculoSeleccionado ?: return@Button
-                    // Formato ISO para el backend: "2026-05-10T09:00:00"
                     val isoFecha = datePickerState.selectedDateMillis?.let { millis ->
                         val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
                         "${sdf.format(Date(millis))}T${horaFormateada}:00"
@@ -341,26 +420,20 @@ private fun NuevaCitaDialog(
         }
     )
 
-    // ── DatePicker modal ──
     if (mostrarDatePicker) {
         DatePickerDialog(
             onDismissRequest = { mostrarDatePicker = false },
             confirmButton = {
-                TextButton(onClick = { mostrarDatePicker = false }) {
-                    Text("Aceptar")
-                }
+                TextButton(onClick = { mostrarDatePicker = false }) { Text("Aceptar") }
             },
             dismissButton = {
-                TextButton(onClick = { mostrarDatePicker = false }) {
-                    Text("Cancelar")
-                }
+                TextButton(onClick = { mostrarDatePicker = false }) { Text("Cancelar") }
             }
         ) {
             DatePicker(state = datePickerState)
         }
     }
 
-    // ── TimePicker modal ──
     if (mostrarTimePicker) {
         AlertDialog(
             onDismissRequest = { mostrarTimePicker = false },
@@ -374,14 +447,10 @@ private fun NuevaCitaDialog(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { mostrarTimePicker = false }) {
-                    Text("Aceptar")
-                }
+                TextButton(onClick = { mostrarTimePicker = false }) { Text("Aceptar") }
             },
             dismissButton = {
-                TextButton(onClick = { mostrarTimePicker = false }) {
-                    Text("Cancelar")
-                }
+                TextButton(onClick = { mostrarTimePicker = false }) { Text("Cancelar") }
             }
         )
     }

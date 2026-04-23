@@ -9,14 +9,16 @@ import com.example.autoelite_android.network.RetrofitClient
 import com.example.autoelite_android.util.SessionManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class CitasViewModel : ViewModel() {
 
     private val api = RetrofitClient.instance
 
-    private val _citas = MutableStateFlow<List<CitaResponse>>(emptyList())
-    val citas: StateFlow<List<CitaResponse>> = _citas
+    private val _citasRaw = MutableStateFlow<List<CitaResponse>>(emptyList())
 
     private val _vehiculos = MutableStateFlow<List<VehiculoResponse>>(emptyList())
     val vehiculos: StateFlow<List<VehiculoResponse>> = _vehiculos
@@ -26,6 +28,25 @@ class CitasViewModel : ViewModel() {
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
+
+    // Filtros
+    val searchQuery = MutableStateFlow("")
+    val estadoFilter = MutableStateFlow<String?>(null) // null = todos
+
+    // Lista filtrada reactiva
+    val citas: StateFlow<List<CitaResponse>> = combine(
+        _citasRaw, searchQuery, estadoFilter
+    ) { lista, query, estado ->
+        lista.filter { cita ->
+            val matchEstado = estado == null || cita.estado == estado
+            val matchQuery = query.isBlank() ||
+                    cita.vehiculo.contains(query, ignoreCase = true) ||
+                    (cita.tipo ?: "").contains(query, ignoreCase = true) ||
+                    (cita.descripcion ?: "").contains(query, ignoreCase = true) ||
+                    cita.fecha.contains(query, ignoreCase = true)
+            matchEstado && matchQuery
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
         cargarCitas()
@@ -40,7 +61,7 @@ class CitasViewModel : ViewModel() {
             try {
                 val response = api.getCitasByCliente(clienteId)
                 if (response.isSuccessful) {
-                    _citas.value = response.body() ?: emptyList()
+                    _citasRaw.value = response.body() ?: emptyList()
                 } else {
                     _error.value = "Error al cargar citas"
                 }
@@ -100,5 +121,7 @@ class CitasViewModel : ViewModel() {
         }
     }
 
+    fun setSearch(query: String) { searchQuery.value = query }
+    fun setEstadoFilter(estado: String?) { estadoFilter.value = estado }
     fun resetError() { _error.value = null }
 }

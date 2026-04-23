@@ -10,14 +10,16 @@ import com.example.autoelite_android.network.RetrofitClient
 import com.example.autoelite_android.util.SessionManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class FacturacionViewModel : ViewModel() {
 
     private val api = RetrofitClient.instance
 
-    private val _facturas = MutableStateFlow<List<FacturaResponse>>(emptyList())
-    val facturas: StateFlow<List<FacturaResponse>> = _facturas
+    private val _facturasRaw = MutableStateFlow<List<FacturaResponse>>(emptyList())
 
     private val _loading = MutableStateFlow(false)
     val loading: StateFlow<Boolean> = _loading
@@ -35,12 +37,27 @@ class FacturacionViewModel : ViewModel() {
     private val _paymentLoading = MutableStateFlow(false)
     val paymentLoading: StateFlow<Boolean> = _paymentLoading
 
-    // ID de la factura que se está pagando actualmente
     private var facturaPagandoId: Long? = null
-
-    // Client secret del PaymentIntent actual (para extraer el ID tras el pago)
     var lastClientSecret: String? = null
         private set
+
+    // ── Filtros ──
+    val searchQuery = MutableStateFlow("")
+    val pagoFilter = MutableStateFlow<Boolean?>(null) // null=todas, true=pagadas, false=pendientes
+
+    val facturas: StateFlow<List<FacturaResponse>> = combine(
+        _facturasRaw, searchQuery, pagoFilter
+    ) { lista, query, pagada ->
+        lista.filter { factura ->
+            val matchPago = pagada == null || factura.pagada == pagada
+            val matchQuery = query.isBlank() ||
+                    factura.numeroFactura.contains(query, ignoreCase = true) ||
+                    factura.clienteNombre.contains(query, ignoreCase = true) ||
+                    factura.fecha.contains(query, ignoreCase = true) ||
+                    factura.total.contains(query, ignoreCase = true)
+            matchPago && matchQuery
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init { cargarFacturas() }
 
@@ -53,7 +70,7 @@ class FacturacionViewModel : ViewModel() {
             try {
                 val response = api.getFacturasByCliente(clienteId)
                 if (response.isSuccessful) {
-                    _facturas.value = response.body() ?: emptyList()
+                    _facturasRaw.value = response.body() ?: emptyList()
                 } else {
                     _error.value = "Error al cargar facturas"
                 }
@@ -90,11 +107,7 @@ class FacturacionViewModel : ViewModel() {
 
     fun onPaymentSuccess(clientSecret: String? = null) {
         val facturaId = facturaPagandoId ?: return
-
-        // clientSecret tiene formato "pi_XXXX_secret_YYYY" → el ID es "pi_XXXX"
-        val paymentIntentId = clientSecret
-            ?.substringBefore("_secret_")
-            ?: ""
+        val paymentIntentId = clientSecret?.substringBefore("_secret_") ?: ""
 
         viewModelScope.launch {
             try {
@@ -133,10 +146,10 @@ class FacturacionViewModel : ViewModel() {
         _error.value = errorMsg ?: "Error al procesar el pago"
     }
 
-    fun clearPaymentConfig() {
-        _paymentConfig.value = null
-    }
+    fun clearPaymentConfig() { _paymentConfig.value = null }
 
+    fun setSearch(query: String) { searchQuery.value = query }
+    fun setPagoFilter(pagada: Boolean?) { pagoFilter.value = pagada }
     fun resetError()   { _error.value   = null }
     fun resetMensaje() { _mensaje.value = null }
 }

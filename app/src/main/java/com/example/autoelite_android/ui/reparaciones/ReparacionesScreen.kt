@@ -1,8 +1,9 @@
 package com.example.autoelite_android.ui.reparaciones
 
-import androidx.compose.foundation.clickable
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -27,6 +28,15 @@ private fun estadoIndex(estado: String) = when (estado) {
     else         -> 0
 }
 
+private val estadosReparacion = listOf("PENDIENTE", "EN_PROCESO", "TERMINADA", "CONFIRMADA")
+private fun estadoRepLabel(estado: String) = when (estado) {
+    "PENDIENTE"  -> "Pendientes"
+    "EN_PROCESO" -> "En proceso"
+    "TERMINADA"  -> "Terminadas"
+    "CONFIRMADA" -> "Confirmadas"
+    else -> estado
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReparacionesScreen(
@@ -38,8 +48,11 @@ fun ReparacionesScreen(
     val error        by viewModel.error.collectAsState()
     val mensaje      by viewModel.mensaje.collectAsState()
     val valoradas    by viewModel.valoradas.collectAsState()
+    val searchQuery  by viewModel.searchQuery.collectAsState()
+    val estadoFilter by viewModel.estadoFilter.collectAsState()
 
     var reparacionAValorar by remember { mutableStateOf<ReparacionResponse?>(null) }
+    var showSearch by remember { mutableStateOf(false) }
 
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(error) {
@@ -50,48 +63,130 @@ fun ReparacionesScreen(
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Mis reparaciones") }) },
+        topBar = {
+            TopAppBar(
+                title = { Text("Mis reparaciones") },
+                actions = {
+                    IconButton(onClick = { showSearch = !showSearch }) {
+                        Icon(
+                            if (showSearch) Icons.Default.SearchOff else Icons.Default.Search,
+                            contentDescription = "Buscar"
+                        )
+                    }
+                }
+            )
+        },
         bottomBar = { AutoEliteBottomBar(navController) },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
-        when {
-            loading -> Box(
-                Modifier.fillMaxSize().padding(paddingValues),
-                contentAlignment = Alignment.Center
-            ) { CircularProgressIndicator() }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            // ── Barra de búsqueda ──
+            AnimatedVisibility(visible = showSearch) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { viewModel.setSearch(it) },
+                    placeholder = { Text("Buscar por vehículo, matrícula, mecánico…") },
+                    leadingIcon = { Icon(Icons.Default.Search, null) },
+                    trailingIcon = {
+                        if (searchQuery.isNotBlank()) {
+                            IconButton(onClick = { viewModel.setSearch("") }) {
+                                Icon(Icons.Default.Clear, "Limpiar")
+                            }
+                        }
+                    },
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
 
-            reparaciones.isEmpty() -> Box(
-                Modifier.fillMaxSize().padding(paddingValues),
-                contentAlignment = Alignment.Center
+            // ── Chips de filtro ──
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(bottom = 8.dp)
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        Icons.Default.Build, null,
-                        modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.outline
+                item {
+                    FilterChip(
+                        selected = estadoFilter == null,
+                        onClick = { viewModel.setEstadoFilter(null) },
+                        label = { Text("Todas") },
+                        leadingIcon = if (estadoFilter == null) {{
+                            Icon(Icons.Default.Done, null, Modifier.size(16.dp))
+                        }} else null
                     )
-                    Spacer(Modifier.height(12.dp))
-                    Text(
-                        "Sin reparaciones activas",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                }
+                items(estadosReparacion) { estado ->
+                    FilterChip(
+                        selected = estadoFilter == estado,
+                        onClick = {
+                            viewModel.setEstadoFilter(
+                                if (estadoFilter == estado) null else estado
+                            )
+                        },
+                        label = { Text(estadoRepLabel(estado)) },
+                        leadingIcon = if (estadoFilter == estado) {{
+                            Icon(Icons.Default.Done, null, Modifier.size(16.dp))
+                        }} else null
                     )
                 }
             }
 
-            else -> LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(vertical = 16.dp)
-            ) {
-                items(reparaciones) { rep ->
-                    ReparacionCard(
-                        rep = rep,
-                        yaValorada = rep.id in valoradas,
-                        onValorar = { reparacionAValorar = rep }
+            // ── Contenido ──
+            when {
+                loading -> Box(
+                    Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) { CircularProgressIndicator() }
+
+                reparaciones.isEmpty() -> Box(
+                    Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            Icons.Default.Build, null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.outline
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            if (searchQuery.isNotBlank() || estadoFilter != null)
+                                "No se encontraron reparaciones"
+                            else "Sin reparaciones activas",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                else -> {
+                    Text(
+                        "${reparaciones.size} reparación${if (reparaciones.size != 1) "es" else ""}",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                     )
+
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = PaddingValues(bottom = 16.dp)
+                    ) {
+                        items(reparaciones) { rep ->
+                            ReparacionCard(
+                                rep = rep,
+                                yaValorada = rep.id in valoradas,
+                                onValorar = { reparacionAValorar = rep }
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -111,7 +206,7 @@ fun ReparacionesScreen(
 }
 
 // ──────────────────────────────────────────────────────────────
-// Card de reparación
+// Card de reparación (sin cambios en la lógica interna)
 // ──────────────────────────────────────────────────────────────
 @Composable
 private fun ReparacionCard(
@@ -125,53 +220,30 @@ private fun ReparacionCard(
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Default.DirectionsCar, null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
+                Icon(Icons.Default.DirectionsCar, null, tint = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.width(8.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        "${rep.vehiculo} · ${rep.matricula}",
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        "Mecánico: ${rep.mecanico}",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Text("${rep.vehiculo} · ${rep.matricula}", fontWeight = FontWeight.Bold)
+                    Text("Mecánico: ${rep.mecanico}", fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Text(
-                    rep.fechaInicio, fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.outline
-                )
+                Text(rep.fechaInicio, fontSize = 11.sp, color = MaterialTheme.colorScheme.outline)
             }
 
             Spacer(Modifier.height(8.dp))
 
-            // Coste
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Default.Euro, null,
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Icon(Icons.Default.Euro, null, modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.width(4.dp))
-                Text(
-                    "Coste: ${rep.costeTotal} €",
-                    fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Text("Coste: ${rep.costeTotal} €", fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
 
             Spacer(Modifier.height(16.dp))
 
-            // Stepper de estado
-            Text(
-                "Estado del vehículo", fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Text("Estado del vehículo", fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(8.dp))
 
             Row(
@@ -193,11 +265,9 @@ private fun ReparacionCard(
                             else MaterialTheme.colorScheme.outline,
                             modifier = Modifier.size(22.dp)
                         )
-                        Text(
-                            paso, fontSize = 9.sp,
+                        Text(paso, fontSize = 9.sp,
                             color = if (activo) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.outline
-                        )
+                            else MaterialTheme.colorScheme.outline)
                     }
                     if (index < estadosPasos.lastIndex) {
                         HorizontalDivider(
@@ -209,13 +279,9 @@ private fun ReparacionCard(
                 }
             }
 
-            // ── Botón de valoración ──
             if (puedeValorar) {
                 Spacer(Modifier.height(12.dp))
-                OutlinedButton(
-                    onClick = onValorar,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
+                OutlinedButton(onClick = onValorar, modifier = Modifier.fillMaxWidth()) {
                     Icon(Icons.Default.Star, null)
                     Spacer(Modifier.width(8.dp))
                     Text("Valorar reparación")
@@ -225,17 +291,11 @@ private fun ReparacionCard(
             if (yaValorada) {
                 Spacer(Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.CheckCircle, null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(16.dp)
-                    )
+                    Icon(Icons.Default.CheckCircle, null,
+                        tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text(
-                        "Valoración enviada",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    Text("Valoración enviada", fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.primary)
                 }
             }
         }
@@ -243,7 +303,7 @@ private fun ReparacionCard(
 }
 
 // ──────────────────────────────────────────────────────────────
-// Diálogo de valoración con estrellas
+// Diálogo de valoración
 // ──────────────────────────────────────────────────────────────
 @Composable
 private fun ValoracionDialog(
@@ -251,8 +311,8 @@ private fun ValoracionDialog(
     onDismiss: () -> Unit,
     onEnviar: (Short, String?) -> Unit
 ) {
-    var puntuacion  by remember { mutableStateOf(0) }
-    var comentario  by remember { mutableStateOf("") }
+    var puntuacion by remember { mutableStateOf(0) }
+    var comentario by remember { mutableStateOf("") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -262,18 +322,11 @@ private fun ValoracionDialog(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    vehiculo,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Text(vehiculo, fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
 
-                // Estrellas
-                Text(
-                    "¿Cómo fue tu experiencia?",
-                    fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Text("¿Cómo fue tu experiencia?", fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
 
                 Row(
                     horizontalArrangement = Arrangement.Center,
@@ -285,8 +338,7 @@ private fun ValoracionDialog(
                                 imageVector = if (i <= puntuacion) Icons.Default.Star
                                 else Icons.Outlined.StarOutline,
                                 contentDescription = "$i estrellas",
-                                tint = if (i <= puntuacion)
-                                    MaterialTheme.colorScheme.primary
+                                tint = if (i <= puntuacion) MaterialTheme.colorScheme.primary
                                 else MaterialTheme.colorScheme.outline,
                                 modifier = Modifier.size(36.dp)
                             )
@@ -294,41 +346,29 @@ private fun ValoracionDialog(
                     }
                 }
 
-                // Texto descriptivo según puntuación
                 if (puntuacion > 0) {
                     Text(
                         when (puntuacion) {
-                            1 -> "Muy malo"
-                            2 -> "Malo"
-                            3 -> "Normal"
-                            4 -> "Bueno"
-                            5 -> "Excelente"
-                            else -> ""
+                            1 -> "Muy malo"; 2 -> "Malo"; 3 -> "Normal"
+                            4 -> "Bueno"; 5 -> "Excelente"; else -> ""
                         },
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
 
-                // Comentario opcional
                 OutlinedTextField(
                     value = comentario,
                     onValueChange = { comentario = it },
                     label = { Text("Comentario (opcional)") },
                     modifier = Modifier.fillMaxWidth(),
-                    minLines = 2,
-                    maxLines = 4
+                    minLines = 2, maxLines = 4
                 )
             }
         },
         confirmButton = {
             Button(
-                onClick = {
-                    onEnviar(
-                        puntuacion.toShort(),
-                        comentario.ifBlank { null }
-                    )
-                },
+                onClick = { onEnviar(puntuacion.toShort(), comentario.ifBlank { null }) },
                 enabled = puntuacion > 0
             ) { Text("Enviar") }
         },

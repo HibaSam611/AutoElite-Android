@@ -98,6 +98,10 @@ fun HomeScreen(
                     "Facturas", "Paga tus facturas online") {
                     navController.navigate(Screen.Facturacion.route)
                 }
+                QuickCard(Modifier.weight(1f), Icons.Default.History,
+                    "Historial", "Tu actividad completa") {
+                    navController.navigate(Screen.Historial.route)
+                }
             }
 
             Spacer(Modifier.height(24.dp))

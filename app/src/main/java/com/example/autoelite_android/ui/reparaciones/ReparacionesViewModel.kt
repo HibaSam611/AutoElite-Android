@@ -9,14 +9,16 @@ import com.example.autoelite_android.util.SessionManager
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class ReparacionesViewModel : ViewModel() {
 
     private val api = RetrofitClient.instance
 
-    private val _reparaciones = MutableStateFlow<List<ReparacionResponse>>(emptyList())
-    val reparaciones: StateFlow<List<ReparacionResponse>> = _reparaciones
+    private val _reparacionesRaw = MutableStateFlow<List<ReparacionResponse>>(emptyList())
 
     private val _loading = MutableStateFlow(false)
     val loading: StateFlow<Boolean> = _loading
@@ -27,9 +29,26 @@ class ReparacionesViewModel : ViewModel() {
     private val _mensaje = MutableStateFlow<String?>(null)
     val mensaje: StateFlow<String?> = _mensaje
 
-    // IDs de reparaciones ya valoradas en esta sesión
     private val _valoradas = MutableStateFlow<Set<Long>>(emptySet())
     val valoradas: StateFlow<Set<Long>> = _valoradas
+
+    // ── Filtros ──
+    val searchQuery = MutableStateFlow("")
+    val estadoFilter = MutableStateFlow<String?>(null)
+
+    val reparaciones: StateFlow<List<ReparacionResponse>> = combine(
+        _reparacionesRaw, searchQuery, estadoFilter
+    ) { lista, query, estado ->
+        lista.filter { rep ->
+            val matchEstado = estado == null || rep.estado == estado
+            val matchQuery = query.isBlank() ||
+                    rep.vehiculo.contains(query, ignoreCase = true) ||
+                    rep.matricula.contains(query, ignoreCase = true) ||
+                    rep.mecanico.contains(query, ignoreCase = true) ||
+                    rep.fechaInicio.contains(query, ignoreCase = true)
+            matchEstado && matchQuery
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init { cargarReparaciones() }
 
@@ -42,7 +61,7 @@ class ReparacionesViewModel : ViewModel() {
             try {
                 val response = api.getReparacionesByCliente(clienteId)
                 if (response.isSuccessful) {
-                    _reparaciones.value = response.body() ?: emptyList()
+                    _reparacionesRaw.value = response.body() ?: emptyList()
                 } else {
                     _error.value = "Error al cargar reparaciones"
                 }
@@ -79,6 +98,8 @@ class ReparacionesViewModel : ViewModel() {
         }
     }
 
+    fun setSearch(query: String) { searchQuery.value = query }
+    fun setEstadoFilter(estado: String?) { estadoFilter.value = estado }
     fun resetError()   { _error.value   = null }
     fun resetMensaje() { _mensaje.value = null }
 }

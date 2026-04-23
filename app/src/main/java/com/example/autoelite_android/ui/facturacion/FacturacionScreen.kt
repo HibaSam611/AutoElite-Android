@@ -1,7 +1,9 @@
 package com.example.autoelite_android.ui.facturacion
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -34,7 +36,11 @@ fun FacturacionScreen(
     val mensaje        by viewModel.mensaje.collectAsState()
     val paymentConfig  by viewModel.paymentConfig.collectAsState()
     val paymentLoading by viewModel.paymentLoading.collectAsState()
+    val searchQuery    by viewModel.searchQuery.collectAsState()
+    val pagoFilter     by viewModel.pagoFilter.collectAsState()
     val context = LocalContext.current
+
+    var showSearch by remember { mutableStateOf(false) }
 
     // Stripe PaymentSheet
     val paymentSheet = rememberPaymentSheet { result ->
@@ -51,12 +57,9 @@ fun FacturacionScreen(
         }
     }
 
-    // Cuando el backend devuelve el PaymentIntent, presentar PaymentSheet
     LaunchedEffect(paymentConfig) {
         paymentConfig?.let { config ->
-            // Inicializar Stripe con la publishable key del backend
             PaymentConfiguration.init(context, config.publishableKey)
-
             paymentSheet.presentWithPaymentIntent(
                 paymentIntentClientSecret = config.clientSecret,
                 configuration = PaymentSheet.Configuration(
@@ -81,42 +84,138 @@ fun FacturacionScreen(
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Mis facturas") }) },
+        topBar = {
+            TopAppBar(
+                title = { Text("Mis facturas") },
+                actions = {
+                    IconButton(onClick = { showSearch = !showSearch }) {
+                        Icon(
+                            if (showSearch) Icons.Default.SearchOff else Icons.Default.Search,
+                            contentDescription = "Buscar"
+                        )
+                    }
+                }
+            )
+        },
         bottomBar = { AutoEliteBottomBar(navController) },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
-        when {
-            loading -> Box(
-                Modifier.fillMaxSize().padding(paddingValues),
-                contentAlignment = Alignment.Center
-            ) { CircularProgressIndicator() }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            // ── Barra de búsqueda ──
+            AnimatedVisibility(visible = showSearch) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { viewModel.setSearch(it) },
+                    placeholder = { Text("Buscar por nº factura, fecha, importe…") },
+                    leadingIcon = { Icon(Icons.Default.Search, null) },
+                    trailingIcon = {
+                        if (searchQuery.isNotBlank()) {
+                            IconButton(onClick = { viewModel.setSearch("") }) {
+                                Icon(Icons.Default.Clear, "Limpiar")
+                            }
+                        }
+                    },
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
 
-            facturas.isEmpty() -> Box(
-                Modifier.fillMaxSize().padding(paddingValues),
-                contentAlignment = Alignment.Center
+            // ── Chips de filtro (Pagada / Pendiente) ──
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(bottom = 8.dp)
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.Receipt, null,
-                        modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.outline)
-                    Spacer(Modifier.height(12.dp))
-                    Text("No tienes facturas aún",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                item {
+                    FilterChip(
+                        selected = pagoFilter == null,
+                        onClick = { viewModel.setPagoFilter(null) },
+                        label = { Text("Todas") },
+                        leadingIcon = if (pagoFilter == null) {{
+                            Icon(Icons.Default.Done, null, Modifier.size(16.dp))
+                        }} else null
+                    )
+                }
+                item {
+                    FilterChip(
+                        selected = pagoFilter == false,
+                        onClick = {
+                            viewModel.setPagoFilter(if (pagoFilter == false) null else false)
+                        },
+                        label = { Text("Pendientes") },
+                        leadingIcon = if (pagoFilter == false) {{
+                            Icon(Icons.Default.Done, null, Modifier.size(16.dp))
+                        }} else null
+                    )
+                }
+                item {
+                    FilterChip(
+                        selected = pagoFilter == true,
+                        onClick = {
+                            viewModel.setPagoFilter(if (pagoFilter == true) null else true)
+                        },
+                        label = { Text("Pagadas") },
+                        leadingIcon = if (pagoFilter == true) {{
+                            Icon(Icons.Default.Done, null, Modifier.size(16.dp))
+                        }} else null
+                    )
                 }
             }
 
-            else -> LazyColumn(
-                modifier = Modifier.fillMaxSize()
-                    .padding(paddingValues).padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                contentPadding = PaddingValues(vertical = 16.dp)
-            ) {
-                items(facturas) { factura ->
-                    FacturaCard(
-                        factura = factura,
-                        paymentLoading = paymentLoading,
-                        onPagar = { viewModel.iniciarPago(factura.id) }
+            // ── Contenido ──
+            when {
+                loading -> Box(
+                    Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) { CircularProgressIndicator() }
+
+                facturas.isEmpty() -> Box(
+                    Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Default.Receipt, null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.outline)
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            if (searchQuery.isNotBlank() || pagoFilter != null)
+                                "No se encontraron facturas"
+                            else "No tienes facturas aún",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                else -> {
+                    Text(
+                        "${facturas.size} factura${if (facturas.size != 1) "s" else ""}",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                     )
+
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        contentPadding = PaddingValues(bottom = 16.dp)
+                    ) {
+                        items(facturas) { factura ->
+                            FacturaCard(
+                                factura = factura,
+                                paymentLoading = paymentLoading,
+                                onPagar = { viewModel.iniciarPago(factura.id) }
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -147,11 +246,8 @@ private fun FacturaCard(
                     Text(factura.fecha, fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                     factura.metodoPago?.let { metodo ->
-                        Text(
-                            "Método: $metodo",
-                            fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.outline
-                        )
+                        Text("Método: $metodo", fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.outline)
                     }
                 }
                 Column(horizontalAlignment = Alignment.End) {
@@ -166,7 +262,6 @@ private fun FacturaCard(
                 }
             }
 
-            // Botón de pago con Stripe
             if (!factura.pagada) {
                 Button(
                     onClick = onPagar,
