@@ -102,6 +102,13 @@ data class ValoracionRequest(
     val comentario: String?
 )
 
+data class ValoracionSimpleResponse(
+    val id: Long,
+    val reparacionId: Long,
+    val puntuacion: Short,
+    val comentario: String?
+)
+
 // Stripe / Pagos
 data class PaymentIntentRequest(
     val facturaId: Long

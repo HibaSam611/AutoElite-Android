@@ -50,7 +50,10 @@ class ReparacionesViewModel : ViewModel() {
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    init { cargarReparaciones() }
+    init {
+        cargarReparaciones()
+        cargarValoradasExistentes()
+    }
 
     fun cargarReparaciones() {
         val clienteId = SessionManager.clienteId
@@ -70,6 +73,22 @@ class ReparacionesViewModel : ViewModel() {
             } finally {
                 _loading.value = false
             }
+        }
+    }
+
+    private fun cargarValoradasExistentes() {
+        val clienteId = SessionManager.clienteId
+        if (clienteId == -1L) return
+        viewModelScope.launch {
+            try {
+                val response = api.getValoracionesByCliente(clienteId)
+                if (response.isSuccessful) {
+                    val ids = response.body()
+                        ?.map { it.reparacionId }
+                        ?.toSet() ?: emptySet()
+                    _valoradas.value = _valoradas.value + ids
+                }
+            } catch (_: Exception) { }
         }
     }
 

@@ -69,6 +69,11 @@ interface ApiService {
         @Body req: ValoracionRequest
     ): Response<Any>
 
+    @GET("api/valoraciones/cliente/{clienteId}")
+    suspend fun getValoracionesByCliente(
+        @Path("clienteId") clienteId: Long
+    ): Response<List<ValoracionSimpleResponse>>
+
     // Stripe – Pagos online
     @POST("api/pagos/create-payment-intent")
     suspend fun createPaymentIntent(
