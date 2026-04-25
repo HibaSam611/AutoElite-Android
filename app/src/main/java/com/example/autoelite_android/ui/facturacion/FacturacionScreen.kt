@@ -1,5 +1,6 @@
 package com.example.autoelite_android.ui.facturacion
 
+import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -11,18 +12,23 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.autoelite_android.model.FacturaResponse
 import com.example.autoelite_android.navigation.AutoEliteBottomBar
-import androidx.compose.ui.platform.LocalContext
+import com.example.autoelite_android.util.PdfGenerator
 import com.stripe.android.PaymentConfiguration
 import com.stripe.android.paymentsheet.PaymentSheet
 import com.stripe.android.paymentsheet.PaymentSheetResult
 import com.stripe.android.paymentsheet.rememberPaymentSheet
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,8 +45,10 @@ fun FacturacionScreen(
     val searchQuery    by viewModel.searchQuery.collectAsState()
     val pagoFilter     by viewModel.pagoFilter.collectAsState()
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     var showSearch by remember { mutableStateOf(false) }
+    var generandoPdf by remember { mutableStateOf<Long?>(null) } // ID de factura generando
 
     // Stripe PaymentSheet
     val paymentSheet = rememberPaymentSheet { result ->
@@ -126,7 +134,7 @@ fun FacturacionScreen(
                 )
             }
 
-            // ── Chips de filtro (Pagada / Pendiente) ──
+            // ── Chips de filtro ──
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -212,7 +220,46 @@ fun FacturacionScreen(
                             FacturaCard(
                                 factura = factura,
                                 paymentLoading = paymentLoading,
-                                onPagar = { viewModel.iniciarPago(factura.id) }
+                                generandoPdf = generandoPdf == factura.id,
+                                onPagar = { viewModel.iniciarPago(factura.id) },
+                                onCompartirPdf = {
+                                    scope.launch {
+                                        generandoPdf = factura.id
+                                        try {
+                                            val archivo = withContext(Dispatchers.IO) {
+                                                PdfGenerator.generarFacturaPdf(context, factura)
+                                            }
+                                            val uri = FileProvider.getUriForFile(
+                                                context,
+                                                "${context.packageName}.fileprovider",
+                                                archivo
+                                            )
+                                            val intent = Intent(Intent.ACTION_SEND).apply {
+                                                type = "application/pdf"
+                                                putExtra(Intent.EXTRA_STREAM, uri)
+                                                putExtra(
+                                                    Intent.EXTRA_SUBJECT,
+                                                    "Factura ${factura.numeroFactura} - AutoElite"
+                                                )
+                                                putExtra(
+                                                    Intent.EXTRA_TEXT,
+                                                    "Adjunto la factura ${factura.numeroFactura} " +
+                                                            "por importe de ${factura.total} €."
+                                                )
+                                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                            }
+                                            context.startActivity(
+                                                Intent.createChooser(intent, "Compartir factura")
+                                            )
+                                        } catch (e: Exception) {
+                                            snackbarHostState.showSnackbar(
+                                                "Error al generar el PDF"
+                                            )
+                                        } finally {
+                                            generandoPdf = null
+                                        }
+                                    }
+                                }
                             )
                         }
                     }
@@ -226,7 +273,9 @@ fun FacturacionScreen(
 private fun FacturaCard(
     factura: FacturaResponse,
     paymentLoading: Boolean,
-    onPagar: () -> Unit
+    generandoPdf: Boolean,
+    onPagar: () -> Unit,
+    onCompartirPdf: () -> Unit
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column {
@@ -262,26 +311,54 @@ private fun FacturaCard(
                 }
             }
 
-            if (!factura.pagada) {
-                Button(
-                    onClick = onPagar,
-                    enabled = !paymentLoading,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
+            // ── Botones de acción ──
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Botón compartir PDF (siempre visible)
+                OutlinedButton(
+                    onClick = onCompartirPdf,
+                    enabled = !generandoPdf,
+                    modifier = if (factura.pagada) Modifier.fillMaxWidth()
+                    else Modifier.weight(1f)
                 ) {
-                    if (paymentLoading) {
+                    if (generandoPdf) {
                         CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp),
-                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(16.dp),
                             strokeWidth = 2.dp
                         )
                         Spacer(Modifier.width(8.dp))
-                        Text("Preparando pago…")
+                        Text("Generando…", fontSize = 13.sp)
                     } else {
-                        Icon(Icons.Default.CreditCard, null)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Pagar online")
+                        Icon(Icons.Default.Share, null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Compartir PDF", fontSize = 13.sp)
+                    }
+                }
+
+                // Botón pagar (solo si no está pagada)
+                if (!factura.pagada) {
+                    Button(
+                        onClick = onPagar,
+                        enabled = !paymentLoading,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        if (paymentLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text("Pagando…", fontSize = 13.sp)
+                        } else {
+                            Icon(Icons.Default.CreditCard, null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Pagar", fontSize = 13.sp)
+                        }
                     }
                 }
             }
