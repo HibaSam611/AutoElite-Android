@@ -85,4 +85,11 @@ interface ApiService {
     suspend fun canjearRecompensa(
         @Body req: CanjearRecompensaRequest
     ): Response<CanjearRecompensaResponse>
+
+    // Reparaciones - Aceptar/Rechazar (cliente)
+    @PUT("api/reparaciones/{id}/aceptar")
+    suspend fun aceptarReparacion(@Path("id") id: Long): Response<ReparacionResponse>
+
+    @PUT("api/reparaciones/{id}/rechazar")
+    suspend fun rechazarReparacion(@Path("id") id: Long): Response<ReparacionResponse>
 }

@@ -20,20 +20,22 @@ import androidx.navigation.NavController
 import com.example.autoelite_android.model.ReparacionResponse
 import com.example.autoelite_android.navigation.AutoEliteBottomBar
 
-private val estadosPasos = listOf("Recibido", "En proceso", "Terminado", "Confirmado")
+private val estadosPasos = listOf("Presentada", "En proceso", "Terminada", "Confirmada")
 private fun estadoIndex(estado: String) = when (estado) {
+    "PRESENTADA" -> 0
     "EN_PROCESO" -> 1
     "TERMINADA"  -> 2
     "CONFIRMADA" -> 3
+    "RECHAZADA"  -> -1
     else         -> 0
 }
-
-private val estadosReparacion = listOf("PENDIENTE", "EN_PROCESO", "TERMINADA", "CONFIRMADA")
+private val estadosReparacion = listOf("PRESENTADA", "EN_PROCESO", "TERMINADA", "CONFIRMADA", "RECHAZADA")
 private fun estadoRepLabel(estado: String) = when (estado) {
-    "PENDIENTE"  -> "Pendientes"
+    "PRESENTADA" -> "Presentadas"
     "EN_PROCESO" -> "En proceso"
     "TERMINADA"  -> "Terminadas"
     "CONFIRMADA" -> "Confirmadas"
+    "RECHAZADA"  -> "Rechazadas"
     else -> estado
 }
 
@@ -183,7 +185,9 @@ fun ReparacionesScreen(
                             ReparacionCard(
                                 rep = rep,
                                 yaValorada = rep.id in valoradas,
-                                onValorar = { reparacionAValorar = rep }
+                                onValorar = { reparacionAValorar = rep },
+                                onAceptar = { viewModel.aceptarReparacion(rep.id) },
+                                onRechazar = { viewModel.rechazarReparacion(rep.id) }
                             )
                         }
                     }
@@ -205,17 +209,17 @@ fun ReparacionesScreen(
     }
 }
 
-// ──────────────────────────────────────────────────────────────
-// Card de reparación (sin cambios en la lógica interna)
-// ──────────────────────────────────────────────────────────────
-@Composable
+ @Composable
 private fun ReparacionCard(
     rep: ReparacionResponse,
     yaValorada: Boolean,
-    onValorar: () -> Unit
+    onValorar: () -> Unit,
+    onAceptar: () -> Unit,
+    onRechazar: () -> Unit
 ) {
-    val pasoActual = estadoIndex(rep.estado)
     val puedeValorar = (rep.estado == "TERMINADA" || rep.estado == "CONFIRMADA") && !yaValorada
+    val esPresentada = rep.estado == "PRESENTADA"
+    val esRechazada = rep.estado == "RECHAZADA"
 
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -240,45 +244,95 @@ private fun ReparacionCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
 
-            Spacer(Modifier.height(16.dp))
+            // Mostrar estado RECHAZADA de forma especial
+            if (esRechazada) {
+                Spacer(Modifier.height(12.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Cancel, null,
+                        tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Reparación rechazada", fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.error)
+                }
+            } else {
+                // Barra de progreso normal
+                Spacer(Modifier.height(16.dp))
+                Text("Estado del vehículo", fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(8.dp))
 
-            Text("Estado del vehículo", fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                estadosPasos.forEachIndexed { index, paso ->
-                    val activo = index <= pasoActual
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(
-                            if (activo) Icons.Default.CheckCircle
-                            else Icons.Default.RadioButtonUnchecked,
-                            contentDescription = paso,
-                            tint = if (activo) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.outline,
-                            modifier = Modifier.size(22.dp)
-                        )
-                        Text(paso, fontSize = 9.sp,
-                            color = if (activo) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.outline)
-                    }
-                    if (index < estadosPasos.lastIndex) {
-                        HorizontalDivider(
-                            modifier = Modifier.weight(0.5f),
-                            color = if (index < pasoActual) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.outlineVariant
-                        )
+                val pasoActual = estadoIndex(rep.estado)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    estadosPasos.forEachIndexed { index, paso ->
+                        val activo = index <= pasoActual
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                if (activo) Icons.Default.CheckCircle
+                                else Icons.Default.RadioButtonUnchecked,
+                                contentDescription = paso,
+                                tint = if (activo) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.size(22.dp)
+                            )
+                            Text(paso, fontSize = 9.sp,
+                                color = if (activo) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.outline)
+                        }
+                        if (index < estadosPasos.lastIndex) {
+                            HorizontalDivider(
+                                modifier = Modifier.weight(0.5f),
+                                color = if (index < pasoActual) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.outlineVariant
+                            )
+                        }
                     }
                 }
             }
 
+            // Botones ACEPTAR / RECHAZAR para estado PRESENTADA
+            if (esPresentada) {
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    "El taller te ha presentado esta reparación. ¿Deseas aceptarla?",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onRechazar,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Icon(Icons.Default.Close, null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Rechazar")
+                    }
+                    Button(
+                        onClick = onAceptar,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(Icons.Default.Check, null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Aceptar")
+                    }
+                }
+            }
+
+            // Botón valorar (solo para terminada/confirmada)
             if (puedeValorar) {
                 Spacer(Modifier.height(12.dp))
                 OutlinedButton(onClick = onValorar, modifier = Modifier.fillMaxWidth()) {

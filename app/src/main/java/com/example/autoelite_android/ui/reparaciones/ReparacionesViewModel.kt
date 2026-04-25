@@ -102,4 +102,36 @@ class ReparacionesViewModel : ViewModel() {
     fun setEstadoFilter(estado: String?) { estadoFilter.value = estado }
     fun resetError()   { _error.value   = null }
     fun resetMensaje() { _mensaje.value = null }
+
+    fun aceptarReparacion(reparacionId: Long) {
+        viewModelScope.launch {
+            try {
+                val response = api.aceptarReparacion(reparacionId)
+                if (response.isSuccessful) {
+                    _mensaje.value = "Reparación aceptada"
+                    cargarReparaciones()
+                } else {
+                    _error.value = "Error al aceptar la reparación"
+                }
+            } catch (e: Exception) {
+                _error.value = "Sin conexión"
+            }
+        }
+    }
+
+    fun rechazarReparacion(reparacionId: Long) {
+        viewModelScope.launch {
+            try {
+                val response = api.rechazarReparacion(reparacionId)
+                if (response.isSuccessful) {
+                    _mensaje.value = "Reparación rechazada"
+                    cargarReparaciones()
+                } else {
+                    _error.value = "Error al rechazar la reparación"
+                }
+            } catch (e: Exception) {
+                _error.value = "Sin conexión"
+            }
+        }
+    }
 }
