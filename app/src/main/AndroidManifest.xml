@@ -2,7 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET"/>
-    <!-- NUEVO: Permiso para notificaciones en Android 13+ -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
     <application
@@ -19,15 +18,14 @@
             android:name="com.example.autoelite_android.MainActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.Autoelite">
+            android:theme="@style/Theme.Autoelite.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <!-- Servicio FCM para recibir notificaciones push -->
+        <!-- Servicio FCM -->
         <service
             android:name="com.example.autoelite_android.notifications.AutoEliteMessagingService"
             android:exported="false">
@@ -36,7 +34,7 @@
             </intent-filter>
         </service>
 
-        <!-- FileProvider para compartir PDFs de facturas -->
+        <!-- FileProvider para PDFs -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
