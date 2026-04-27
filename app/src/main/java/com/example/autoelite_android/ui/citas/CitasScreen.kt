@@ -1,10 +1,16 @@
 package com.example.autoelite_android.ui.citas
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -12,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -20,6 +27,8 @@ import com.example.autoelite_android.model.CitaResponse
 import com.example.autoelite_android.model.VehiculoResponse
 import com.example.autoelite_android.navigation.AutoEliteBottomBar
 import java.text.SimpleDateFormat
+import java.time.LocalDate
+import java.time.format.TextStyle
 import java.util.*
 
 private val estadosCita = listOf("PENDIENTE", "CONFIRMADA", "CANCELADA")
@@ -201,6 +210,7 @@ fun CitasScreen(
     if (showDialog) {
         NuevaCitaDialog(
             vehiculos = vehiculos,
+            viewModel = viewModel,
             onDismiss = { showDialog = false },
             onConfirmar = { vehiculoId, fecha, desc ->
                 viewModel.crearCita(vehiculoId, fecha, desc)
@@ -210,7 +220,9 @@ fun CitasScreen(
     }
 }
 
+// ──────────────────────────────────────────────────────────────
 // Card de cita
+// ──────────────────────────────────────────────────────────────
 @Composable
 private fun CitaCard(cita: CitaResponse, onCancelar: () -> Unit) {
     val estadoColor = when (cita.estado) {
@@ -267,11 +279,14 @@ private fun CitaCard(cita: CitaResponse, onCancelar: () -> Unit) {
     }
 }
 
-// Diálogo de nueva cita con DatePicker, TimePicker y Dropdown
+// ──────────────────────────────────────────────────────────────
+// Diálogo de nueva cita con selección de fecha + grid de horas
+// ──────────────────────────────────────────────────────────────
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun NuevaCitaDialog(
     vehiculos: List<VehiculoResponse>,
+    viewModel: CitasViewModel,
     onDismiss: () -> Unit,
     onConfirmar: (Long, String, String) -> Unit
 ) {
@@ -280,8 +295,10 @@ private fun NuevaCitaDialog(
     var vehiculoSeleccionado by remember { mutableStateOf<VehiculoResponse?>(null) }
     var vehiculoExpanded     by remember { mutableStateOf(false) }
 
+    // Fecha
     var mostrarDatePicker by remember { mutableStateOf(false) }
     val datePickerState   = rememberDatePickerState()
+    var fechaIso by remember { mutableStateOf<String?>(null) }
     val fechaFormateada = remember(datePickerState.selectedDateMillis) {
         datePickerState.selectedDateMillis?.let { millis ->
             SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
@@ -289,25 +306,37 @@ private fun NuevaCitaDialog(
         } ?: ""
     }
 
-    var mostrarTimePicker by remember { mutableStateOf(false) }
-    val timePickerState   = rememberTimePickerState(
-        initialHour = 9,
-        initialMinute = 0,
-        is24Hour = true
-    )
-    val horaFormateada = remember(
-        timePickerState.hour,
-        timePickerState.minute,
-        mostrarTimePicker
-    ) {
-        String.format("%02d:%02d", timePickerState.hour, timePickerState.minute)
+    // Cuando cambia la fecha, pedir horas disponibles
+    LaunchedEffect(datePickerState.selectedDateMillis) {
+        datePickerState.selectedDateMillis?.let { millis ->
+            val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val iso = sdf.format(Date(millis))
+            fechaIso = iso
+            viewModel.cargarHorasDisponibles(iso)
+        }
     }
+
+    // Hora seleccionada
+    var horaSeleccionada by remember { mutableStateOf<String?>(null) }
+
+    // Limpiar hora al cambiar fecha
+    LaunchedEffect(fechaIso) {
+        horaSeleccionada = null
+    }
+
+    val horasDisponibles by viewModel.horasDisponibles.collectAsState()
+    val horasLoading     by viewModel.horasLoading.collectAsState()
+    val todasLasHoras    = viewModel.todasLasHoras
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Nueva cita") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Selector de vehículo
                 ExposedDropdownMenuBox(
                     expanded = vehiculoExpanded,
                     onExpandedChange = { vehiculoExpanded = it }
@@ -347,6 +376,7 @@ private fun NuevaCitaDialog(
                     }
                 }
 
+                // ── Selector de fecha ──
                 OutlinedTextField(
                     value = fechaFormateada,
                     onValueChange = {},
@@ -354,37 +384,175 @@ private fun NuevaCitaDialog(
                     label = { Text("Fecha") },
                     leadingIcon = { Icon(Icons.Default.CalendarMonth, null) },
                     modifier = Modifier.fillMaxWidth(),
-                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-                        .also { interactionSource ->
-                            LaunchedEffect(interactionSource) {
-                                interactionSource.interactions.collect { interaction ->
-                                    if (interaction is androidx.compose.foundation.interaction.PressInteraction.Release) {
-                                        mostrarDatePicker = true
-                                    }
+                    interactionSource = remember {
+                        androidx.compose.foundation.interaction.MutableInteractionSource()
+                    }.also { interactionSource ->
+                        LaunchedEffect(interactionSource) {
+                            interactionSource.interactions.collect { interaction ->
+                                if (interaction is androidx.compose.foundation.interaction.PressInteraction.Release) {
+                                    mostrarDatePicker = true
                                 }
                             }
                         }
+                    }
                 )
 
-                OutlinedTextField(
-                    value = horaFormateada,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Hora") },
-                    leadingIcon = { Icon(Icons.Default.AccessTime, null) },
-                    modifier = Modifier.fillMaxWidth(),
-                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-                        .also { interactionSource ->
-                            LaunchedEffect(interactionSource) {
-                                interactionSource.interactions.collect { interaction ->
-                                    if (interaction is androidx.compose.foundation.interaction.PressInteraction.Release) {
-                                        mostrarTimePicker = true
-                                    }
-                                }
+                // Grid de horas disponibles
+                if (fechaIso != null) {
+                    Text(
+                        "Horarios disponibles:",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 14.sp
+                    )
+
+                    if (horasLoading) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().height(100.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(modifier = Modifier.size(28.dp))
+                        }
+                    } else if (horasDisponibles.isEmpty()) {
+                        // Día completo
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Default.EventBusy, null,
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    "No hay horas disponibles para este día. Selecciona otra fecha.",
+                                    fontSize = 13.sp,
+                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                )
                             }
                         }
-                )
+                    } else {
+                        // Mostrar todas las horas: disponibles seleccionables, ocupadas desactivadas
+                        // Usamos un FlowRow manual con Rows
+                        val chunked = todasLasHoras.chunked(4)
+                        chunked.forEach { fila ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                fila.forEach { hora ->
+                                    val disponible = hora in horasDisponibles
+                                    val seleccionada = hora == horaSeleccionada
 
+                                    if (seleccionada) {
+                                        // Hora seleccionada: botón relleno
+                                        Button(
+                                            onClick = { horaSeleccionada = hora },
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .height(40.dp),
+                                            contentPadding = PaddingValues(0.dp)
+                                        ) {
+                                            Text(hora, fontSize = 13.sp)
+                                        }
+                                    } else if (disponible) {
+                                        // Hora disponible: botón outlined
+                                        OutlinedButton(
+                                            onClick = { horaSeleccionada = hora },
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .height(40.dp),
+                                            contentPadding = PaddingValues(0.dp)
+                                        ) {
+                                            Text(hora, fontSize = 13.sp)
+                                        }
+                                    } else {
+                                        // Hora ocupada: botón desactivado con tachado
+                                        OutlinedButton(
+                                            onClick = {},
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .height(40.dp),
+                                            enabled = false,
+                                            contentPadding = PaddingValues(0.dp),
+                                            colors = ButtonDefaults.outlinedButtonColors(
+                                                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                                disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                                            )
+                                        ) {
+                                            Text(
+                                                hora,
+                                                fontSize = 13.sp,
+                                                textDecoration = androidx.compose.ui.text.style.TextDecoration.LineThrough
+                                            )
+                                        }
+                                    }
+                                }
+                                // Rellenar con espacios si la fila tiene menos de 4
+                                repeat(4 - fila.size) {
+                                    Spacer(Modifier.weight(1f))
+                                }
+                            }
+                            Spacer(Modifier.height(4.dp))
+                        }
+
+                        // Leyenda
+                        Spacer(Modifier.height(4.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            LeyendaItem(
+                                color = MaterialTheme.colorScheme.surface,
+                                borderColor = MaterialTheme.colorScheme.outline,
+                                texto = "Disponible"
+                            )
+                            LeyendaItem(
+                                color = MaterialTheme.colorScheme.primary,
+                                borderColor = MaterialTheme.colorScheme.primary,
+                                texto = "Seleccionada"
+                            )
+                            LeyendaItem(
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                                texto = "Ocupada"
+                            )
+                        }
+                    }
+                } else {
+                    // No se ha seleccionado fecha aún
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Info, null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                "Selecciona una fecha para ver los horarios disponibles",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+
+                // ── Descripción / tipo de servicio ──
                 OutlinedTextField(
                     value = descripcion,
                     onValueChange = { descripcion = it },
@@ -404,14 +572,14 @@ private fun NuevaCitaDialog(
             Button(
                 onClick = {
                     val v = vehiculoSeleccionado ?: return@Button
-                    val isoFecha = datePickerState.selectedDateMillis?.let { millis ->
-                        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                        "${sdf.format(Date(millis))}T${horaFormateada}:00"
-                    } ?: return@Button
+                    val fecha = fechaIso ?: return@Button
+                    val hora = horaSeleccionada ?: return@Button
+                    val isoFecha = "${fecha}T${hora}:00"
                     onConfirmar(v.id, isoFecha, descripcion)
                 },
                 enabled = vehiculoSeleccionado != null
-                        && datePickerState.selectedDateMillis != null
+                        && fechaIso != null
+                        && horaSeleccionada != null
                         && descripcion.isNotBlank()
             ) { Text("Solicitar") }
         },
@@ -420,6 +588,7 @@ private fun NuevaCitaDialog(
         }
     )
 
+    // DatePicker dialog
     if (mostrarDatePicker) {
         DatePickerDialog(
             onDismissRequest = { mostrarDatePicker = false },
@@ -433,25 +602,22 @@ private fun NuevaCitaDialog(
             DatePicker(state = datePickerState)
         }
     }
+}
 
-    if (mostrarTimePicker) {
-        AlertDialog(
-            onDismissRequest = { mostrarTimePicker = false },
-            title = { Text("Selecciona la hora") },
-            text = {
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    TimePicker(state = timePickerState)
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { mostrarTimePicker = false }) { Text("Aceptar") }
-            },
-            dismissButton = {
-                TextButton(onClick = { mostrarTimePicker = false }) { Text("Cancelar") }
-            }
-        )
+@Composable
+private fun LeyendaItem(
+    color: androidx.compose.ui.graphics.Color,
+    borderColor: androidx.compose.ui.graphics.Color,
+    texto: String
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Surface(
+            modifier = Modifier.size(12.dp),
+            shape = MaterialTheme.shapes.extraSmall,
+            color = color,
+            border = BorderStroke(1.dp, borderColor)
+        ) {}
+        Spacer(Modifier.width(4.dp))
+        Text(texto, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

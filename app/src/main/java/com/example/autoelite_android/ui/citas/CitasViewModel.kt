@@ -29,9 +29,27 @@ class CitasViewModel : ViewModel() {
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
 
+    // ── Horas disponibles ──
+    private val _horasDisponibles = MutableStateFlow<List<String>>(emptyList())
+    val horasDisponibles: StateFlow<List<String>> = _horasDisponibles
+
+    private val _horasLoading = MutableStateFlow(false)
+    val horasLoading: StateFlow<Boolean> = _horasLoading
+
+    // Todas las franjas posibles (debe coincidir con el backend)
+    val todasLasHoras: List<String> = buildList {
+        var h = 9
+        var m = 0
+        while (h < 18) {
+            add(String.format("%02d:%02d", h, m))
+            m += 30
+            if (m >= 60) { m = 0; h++ }
+        }
+    }
+
     // Filtros
     val searchQuery = MutableStateFlow("")
-    val estadoFilter = MutableStateFlow<String?>(null) // null = todos
+    val estadoFilter = MutableStateFlow<String?>(null)
 
     // Lista filtrada reactiva
     val citas: StateFlow<List<CitaResponse>> = combine(
@@ -83,6 +101,28 @@ class CitasViewModel : ViewModel() {
                     _vehiculos.value = response.body() ?: emptyList()
                 }
             } catch (_: Exception) { }
+        }
+    }
+
+    /**
+     * Pide al backend las horas libres para [fechaIso] (formato yyyy-MM-dd).
+     */
+    fun cargarHorasDisponibles(fechaIso: String) {
+        viewModelScope.launch {
+            _horasLoading.value = true
+            _horasDisponibles.value = emptyList()
+            try {
+                val response = api.getHorasDisponibles(fechaIso)
+                if (response.isSuccessful) {
+                    _horasDisponibles.value = response.body() ?: emptyList()
+                } else {
+                    _error.value = "Error al cargar horarios"
+                }
+            } catch (e: Exception) {
+                _error.value = "Sin conexión para cargar horarios"
+            } finally {
+                _horasLoading.value = false
+            }
         }
     }
 

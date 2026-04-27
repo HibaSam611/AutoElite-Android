@@ -23,7 +23,7 @@ interface ApiService {
     @GET("api/clientes")
     suspend fun getClientes(): Response<List<ClienteResponse>>
 
-    // citas
+    // Citas
     @GET("api/citas/cliente/{clienteId}")
     suspend fun getCitasByCliente(
         @Path("clienteId") clienteId: Long
@@ -34,6 +34,12 @@ interface ApiService {
 
     @PUT("api/citas/{id}/cancelar")
     suspend fun cancelarCita(@Path("id") id: Long): Response<CitaResponse>
+
+    // ── NUEVO: Horas disponibles para una fecha ──
+    @GET("api/citas/horas-disponibles")
+    suspend fun getHorasDisponibles(
+        @Query("fecha") fecha: String   // formato yyyy-MM-dd
+    ): Response<List<String>>
 
     // Vehículos
     @GET("api/vehiculos/cliente/{clienteId}")
