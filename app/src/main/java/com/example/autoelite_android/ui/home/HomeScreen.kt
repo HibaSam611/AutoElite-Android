@@ -18,6 +18,7 @@ import androidx.navigation.NavController
 import com.example.autoelite_android.navigation.AutoEliteBottomBar
 import com.example.autoelite_android.navigation.Screen
 import com.example.autoelite_android.ui.citas.CitasViewModel
+import com.example.autoelite_android.ui.notificaciones.NotificacionesViewModel
 import com.example.autoelite_android.util.SessionManager
 import com.google.firebase.auth.FirebaseAuth
 
@@ -25,7 +26,8 @@ import com.google.firebase.auth.FirebaseAuth
 @Composable
 fun HomeScreen(
     navController: NavController,
-    citasViewModel: CitasViewModel = viewModel()
+    citasViewModel: CitasViewModel = viewModel(),
+    notificacionesViewModel: NotificacionesViewModel = viewModel()
 ) {
     val user   = FirebaseAuth.getInstance().currentUser
     val nombre = user?.displayName?.split(" ")?.firstOrNull()
@@ -36,11 +38,38 @@ fun HomeScreen(
         it.estado == "PENDIENTE" || it.estado == "CONFIRMADA"
     }
 
+    val noLeidas by notificacionesViewModel.noLeidas.collectAsState()
+
+    // Refrescar contador al volver a esta pantalla
+    LaunchedEffect(Unit) {
+        notificacionesViewModel.cargarContadorNoLeidas()
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("AutoElite") },
                 actions = {
+                    // ── Campana de notificaciones con badge ──
+                    IconButton(onClick = {
+                        navController.navigate(Screen.Notificaciones.route)
+                    }) {
+                        BadgedBox(
+                            badge = {
+                                if (noLeidas > 0) {
+                                    Badge {
+                                        Text(
+                                            if (noLeidas > 99) "99+" else noLeidas.toString(),
+                                            fontSize = 10.sp
+                                        )
+                                    }
+                                }
+                            }
+                        ) {
+                            Icon(Icons.Default.Notifications, "Notificaciones")
+                        }
+                    }
+
                     IconButton(onClick = {
                         navController.navigate(Screen.Perfil.route)
                     }) {

@@ -5,9 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.example.autoelite_android.model.RegisterRequest
 import com.example.autoelite_android.model.UpdateProfileRequest
 import com.example.autoelite_android.network.RetrofitClient
+import com.example.autoelite_android.notifications.AutoEliteMessagingService
 import com.example.autoelite_android.util.SessionManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -39,6 +41,7 @@ class AuthViewModel : ViewModel() {
             try {
                 auth.signInWithEmailAndPassword(email, password).await()
                 cargarSesion()
+                registrarTokenFcm()   // ← NUEVO
                 _uiState.value = AuthUiState.Success
             } catch (e: Exception) {
                 _uiState.value = AuthUiState.Error(e.message ?: "Error al iniciar sesión")
@@ -82,6 +85,7 @@ class AuthViewModel : ViewModel() {
 
                     if (response.isSuccessful) {
                         cargarSesion()
+                        registrarTokenFcm()   // ← NUEVO
                         _uiState.value = AuthUiState.Success
                     } else {
                         result.user?.delete()?.await()
@@ -115,7 +119,6 @@ class AuthViewModel : ViewModel() {
                         SessionManager.apellidos = usuario.apellidos
                         SessionManager.telefono  = usuario.telefono ?: ""
 
-                        // Actualizar displayName en Firebase
                         auth.currentUser?.updateProfile(
                             com.google.firebase.auth.UserProfileChangeRequest.Builder()
                                 .setDisplayName("${usuario.nombre} ${usuario.apellidos}")
@@ -144,7 +147,6 @@ class AuthViewModel : ViewModel() {
 
         viewModelScope.launch {
             try {
-                // Re-autenticar antes de cambiar la contraseña
                 val credential = com.google.firebase.auth.EmailAuthProvider
                     .getCredential(email, currentPassword)
                 user.reauthenticate(credential).await()
@@ -191,6 +193,19 @@ class AuthViewModel : ViewModel() {
         } catch (_: Exception) { }
     }
 
+    /**
+     * Obtiene el token FCM y lo envía al backend para recibir notificaciones push.
+     */
+    private fun registrarTokenFcm() {
+        FirebaseMessaging.getInstance().token
+            .addOnSuccessListener { token ->
+                AutoEliteMessagingService.enviarTokenAlBackend(token)
+            }
+            .addOnFailureListener { e ->
+                println("FCM: Error obteniendo token: ${e.message}")
+            }
+    }
+
     fun loginWithGoogle(idToken: String) {
         viewModelScope.launch {
             _uiState.value = AuthUiState.Loading
@@ -198,6 +213,7 @@ class AuthViewModel : ViewModel() {
                 val credential = GoogleAuthProvider.getCredential(idToken, null)
                 auth.signInWithCredential(credential).await()
                 cargarSesion()
+                registrarTokenFcm()   // ← NUEVO
                 _uiState.value = AuthUiState.Success
             } catch (e: Exception) {
                 _uiState.value = AuthUiState.Error(e.message ?: "Error con Google")

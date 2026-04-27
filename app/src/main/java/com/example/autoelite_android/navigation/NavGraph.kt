@@ -12,6 +12,7 @@ import com.example.autoelite_android.ui.crm.CrmScreen
 import com.example.autoelite_android.ui.facturacion.FacturacionScreen
 import com.example.autoelite_android.ui.historial.HistorialScreen
 import com.example.autoelite_android.ui.home.HomeScreen
+import com.example.autoelite_android.ui.notificaciones.NotificacionesScreen
 import com.example.autoelite_android.ui.reparaciones.ReparacionesScreen
 import com.example.autoelite_android.ui.vehiculos.VehiculosScreen
 
@@ -68,6 +69,10 @@ fun NavGraph(
         }
         composable(Screen.Historial.route) {
             HistorialScreen(navController = navController)
+        }
+        // Pantalla de notificaciones
+        composable(Screen.Notificaciones.route) {
+            NotificacionesScreen(navController = navController)
         }
         composable(Screen.Perfil.route) {
             PerfilScreen(

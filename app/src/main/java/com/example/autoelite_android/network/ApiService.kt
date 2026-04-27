@@ -19,6 +19,34 @@ interface ApiService {
         @Body req: UpdateProfileRequest
     ): Response<UsuarioResponse>
 
+    // FCM Token
+    @PUT("api/auth/fcm-token")
+    suspend fun registrarFcmToken(
+        @Header("X-Firebase-UID") uid: String,
+        @Body body: Map<String, String>
+    ): Response<Map<String, String>>
+
+    // ── Notificaciones in-app ──
+    @GET("api/notificaciones")
+    suspend fun getNotificaciones(
+        @Header("X-Firebase-UID") uid: String
+    ): Response<List<Map<String, Any>>>
+
+    @GET("api/notificaciones/no-leidas")
+    suspend fun getNotificacionesNoLeidas(
+        @Header("X-Firebase-UID") uid: String
+    ): Response<Map<String, Any>>
+
+    @PUT("api/notificaciones/leer-todas")
+    suspend fun marcarTodasLeidas(
+        @Header("X-Firebase-UID") uid: String
+    ): Response<Map<String, String>>
+
+    @PUT("api/notificaciones/{id}/leer")
+    suspend fun marcarNotificacionLeida(
+        @Path("id") id: Long
+    ): Response<Map<String, String>>
+
     // Clientes
     @GET("api/clientes")
     suspend fun getClientes(): Response<List<ClienteResponse>>
@@ -35,10 +63,9 @@ interface ApiService {
     @PUT("api/citas/{id}/cancelar")
     suspend fun cancelarCita(@Path("id") id: Long): Response<CitaResponse>
 
-    // ── NUEVO: Horas disponibles para una fecha ──
     @GET("api/citas/horas-disponibles")
     suspend fun getHorasDisponibles(
-        @Query("fecha") fecha: String   // formato yyyy-MM-dd
+        @Query("fecha") fecha: String
     ): Response<List<String>>
 
     // Vehículos
