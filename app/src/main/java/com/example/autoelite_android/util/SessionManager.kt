@@ -31,6 +31,9 @@ object SessionManager {
     private val KEY_NOTIF_REPARACIONES = booleanPreferencesKey("notif_reparaciones")
     private val KEY_NOTIF_PROMOCIONES  = booleanPreferencesKey("notif_promociones")
 
+    // ── Key de tema ──
+    private val KEY_DARK_MODE = booleanPreferencesKey("dark_mode")
+
     // ── Cached values ──
     var clienteId: Long = -1L
         set(value) { field = value; persist(KEY_CLIENTE_ID, value) }
@@ -62,9 +65,9 @@ object SessionManager {
     var notifPromociones: Boolean = false
         set(value) { field = value; persist(KEY_NOTIF_PROMOCIONES, value) }
 
-    /**
-     * Llamar una vez desde MainActivity.onCreate()
-     */
+    var isDarkMode: Boolean = false
+        set(value) { field = value; persist(KEY_DARK_MODE, value) }
+
     fun init(context: Context) {
         dataStore = context.dataStore
         runBlocking {
@@ -79,6 +82,7 @@ object SessionManager {
             notifCitas        = prefs[KEY_NOTIF_CITAS]        ?: true
             notifReparaciones = prefs[KEY_NOTIF_REPARACIONES] ?: true
             notifPromociones  = prefs[KEY_NOTIF_PROMOCIONES]  ?: false
+            isDarkMode        = prefs[KEY_DARK_MODE]          ?: false
         }
     }
 
@@ -90,7 +94,6 @@ object SessionManager {
         email      = ""
         telefono   = ""
         puntos     = 0
-        // No limpiamos preferencias de notificaciones en logout
         scope.launch {
             dataStore.edit { prefs ->
                 prefs.remove(KEY_CLIENTE_ID)

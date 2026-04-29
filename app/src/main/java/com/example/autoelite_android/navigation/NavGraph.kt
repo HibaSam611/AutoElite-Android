@@ -14,12 +14,14 @@ import com.example.autoelite_android.ui.historial.HistorialScreen
 import com.example.autoelite_android.ui.home.HomeScreen
 import com.example.autoelite_android.ui.notificaciones.NotificacionesScreen
 import com.example.autoelite_android.ui.reparaciones.ReparacionesScreen
+import com.example.autoelite_android.ui.theme.ThemeViewModel
 import com.example.autoelite_android.ui.vehiculos.VehiculosScreen
 
 @Composable
 fun NavGraph(
     navController: NavHostController,
-    startDestination: String = Screen.Login.route
+    startDestination: String = Screen.Login.route,
+    themeViewModel: ThemeViewModel
 ) {
     NavHost(
         navController = navController,
@@ -32,12 +34,9 @@ fun NavGraph(
                         popUpTo(Screen.Login.route) { inclusive = true }
                     }
                 },
-                onNavigateToRegister = {
-                    navController.navigate(Screen.Register.route)
-                }
+                onNavigateToRegister = { navController.navigate(Screen.Register.route) }
             )
         }
-
         composable(Screen.Register.route) {
             RegisterScreen(
                 onRegisterSuccess = {
@@ -48,35 +47,18 @@ fun NavGraph(
                 onNavigateToLogin = { navController.popBackStack() }
             )
         }
-
-        composable(Screen.Home.route) {
-            HomeScreen(navController = navController)
-        }
-        composable(Screen.Citas.route) {
-            CitasScreen(navController = navController)
-        }
-        composable(Screen.Vehiculos.route) {
-            VehiculosScreen(navController = navController)
-        }
-        composable(Screen.Reparaciones.route) {
-            ReparacionesScreen(navController = navController)
-        }
-        composable(Screen.Facturacion.route) {
-            FacturacionScreen(navController = navController)
-        }
-        composable(Screen.Crm.route) {
-            CrmScreen(navController = navController)
-        }
-        composable(Screen.Historial.route) {
-            HistorialScreen(navController = navController)
-        }
-        // Pantalla de notificaciones
-        composable(Screen.Notificaciones.route) {
-            NotificacionesScreen(navController = navController)
-        }
+        composable(Screen.Home.route) { HomeScreen(navController = navController) }
+        composable(Screen.Citas.route) { CitasScreen(navController = navController) }
+        composable(Screen.Vehiculos.route) { VehiculosScreen(navController = navController) }
+        composable(Screen.Reparaciones.route) { ReparacionesScreen(navController = navController) }
+        composable(Screen.Facturacion.route) { FacturacionScreen(navController = navController) }
+        composable(Screen.Crm.route) { CrmScreen(navController = navController) }
+        composable(Screen.Historial.route) { HistorialScreen(navController = navController) }
+        composable(Screen.Notificaciones.route) { NotificacionesScreen(navController = navController) }
         composable(Screen.Perfil.route) {
             PerfilScreen(
                 navController = navController,
+                themeViewModel = themeViewModel,
                 onLogout = {
                     navController.navigate(Screen.Login.route) {
                         popUpTo(0) { inclusive = true }
