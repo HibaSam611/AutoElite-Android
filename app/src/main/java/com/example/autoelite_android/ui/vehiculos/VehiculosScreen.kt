@@ -7,6 +7,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,9 +26,10 @@ fun VehiculosScreen(
     navController: NavController,
     viewModel: VehiculosViewModel = viewModel()
 ) {
-    val vehiculos by viewModel.vehiculos.collectAsState()
-    val loading   by viewModel.loading.collectAsState()
-    val error     by viewModel.error.collectAsState()
+    val vehiculos    by viewModel.vehiculos.collectAsState()
+    val loading      by viewModel.loading.collectAsState()
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
+    val error        by viewModel.error.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -48,6 +50,7 @@ fun VehiculosScreen(
         when {
             loading -> Box(Modifier.fillMaxSize().padding(paddingValues),
                 contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+
             vehiculos.isEmpty() -> Box(Modifier.fillMaxSize().padding(paddingValues),
                 contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -60,13 +63,23 @@ fun VehiculosScreen(
                     TextButton(onClick = { showDialog = true }) { Text("Añadir vehículo") }
                 }
             }
-            else -> LazyColumn(
-                modifier = Modifier.fillMaxSize()
-                    .padding(paddingValues).padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                contentPadding = PaddingValues(vertical = 16.dp)
+
+            else -> PullToRefreshBox(
+                isRefreshing = isRefreshing,
+                onRefresh = { viewModel.refresh() },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
             ) {
-                items(vehiculos) { VehiculoCard(it) }
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    contentPadding = PaddingValues(vertical = 16.dp)
+                ) {
+                    items(vehiculos) { VehiculoCard(it) }
+                }
             }
         }
     }

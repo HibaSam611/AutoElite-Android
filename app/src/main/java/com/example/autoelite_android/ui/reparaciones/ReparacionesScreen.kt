@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,13 +48,16 @@ fun ReparacionesScreen(
 ) {
     val reparaciones by viewModel.reparaciones.collectAsState()
     val loading      by viewModel.loading.collectAsState()
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
     val error        by viewModel.error.collectAsState()
     val mensaje      by viewModel.mensaje.collectAsState()
     val valoradas    by viewModel.valoradas.collectAsState()
     val searchQuery  by viewModel.searchQuery.collectAsState()
     val estadoFilter by viewModel.estadoFilter.collectAsState()
 
-    var reparacionAValorar by remember { mutableStateOf<ReparacionResponse?>(null) }
+    var reparacionAValorar  by remember { mutableStateOf<ReparacionResponse?>(null) }
+    var reparacionAAceptar  by remember { mutableStateOf<ReparacionResponse?>(null) }
+    var reparacionARechazar by remember { mutableStateOf<ReparacionResponse?>(null) }
     var showSearch by remember { mutableStateOf(false) }
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -86,7 +90,7 @@ fun ReparacionesScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // ── Barra de búsqueda ──
+            // Barra de búsqueda
             AnimatedVisibility(visible = showSearch) {
                 OutlinedTextField(
                     value = searchQuery,
@@ -107,7 +111,7 @@ fun ReparacionesScreen(
                 )
             }
 
-            // ── Chips de filtro ──
+            // Chips de filtro
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -139,7 +143,7 @@ fun ReparacionesScreen(
                 }
             }
 
-            // ── Contenido ──
+            // Contenido
             when {
                 loading -> Box(
                     Modifier.fillMaxSize(),
@@ -174,21 +178,27 @@ fun ReparacionesScreen(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                     )
 
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        contentPadding = PaddingValues(bottom = 16.dp)
+                    PullToRefreshBox(
+                        isRefreshing = isRefreshing,
+                        onRefresh = { viewModel.refresh() },
+                        modifier = Modifier.fillMaxSize()
                     ) {
-                        items(reparaciones) { rep ->
-                            ReparacionCard(
-                                rep = rep,
-                                yaValorada = rep.id in valoradas,
-                                onValorar = { reparacionAValorar = rep },
-                                onAceptar = { viewModel.aceptarReparacion(rep.id) },
-                                onRechazar = { viewModel.rechazarReparacion(rep.id) }
-                            )
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            contentPadding = PaddingValues(bottom = 16.dp)
+                        ) {
+                            items(reparaciones) { rep ->
+                                ReparacionCard(
+                                    rep = rep,
+                                    yaValorada = rep.id in valoradas,
+                                    onValorar = { reparacionAValorar = rep },
+                                    onAceptar = { reparacionAAceptar = rep },
+                                    onRechazar = { reparacionARechazar = rep }
+                                )
+                            }
                         }
                     }
                 }
@@ -196,7 +206,7 @@ fun ReparacionesScreen(
         }
     }
 
-    // ── Diálogo de valoración ──
+    // Diálogo de valoración
     reparacionAValorar?.let { rep ->
         ValoracionDialog(
             vehiculo = "${rep.vehiculo} · ${rep.matricula}",
@@ -207,9 +217,78 @@ fun ReparacionesScreen(
             }
         )
     }
+
+    // Diálogo confirmar ACEPTAR reparación
+    reparacionAAceptar?.let { rep ->
+        AlertDialog(
+            onDismissRequest = { reparacionAAceptar = null },
+            icon = {
+                Icon(
+                    Icons.Default.Check, null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(32.dp)
+                )
+            },
+            title = { Text("Aceptar reparación") },
+            text = {
+                Text(
+                    "¿Aceptas la reparación de ${rep.vehiculo} · ${rep.matricula} por ${rep.costeTotal} €?" +
+                            "\n\nEl taller comenzará a trabajar en tu vehículo."
+                )
+            },
+            confirmButton = {
+                Button(onClick = {
+                    viewModel.aceptarReparacion(rep.id)
+                    reparacionAAceptar = null
+                }) { Text("Aceptar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { reparacionAAceptar = null }) {
+                    Text("Volver")
+                }
+            }
+        )
+    }
+
+    // Diálogo confirmar RECHAZAR reparación
+    reparacionARechazar?.let { rep ->
+        AlertDialog(
+            onDismissRequest = { reparacionARechazar = null },
+            icon = {
+                Icon(
+                    Icons.Default.Close, null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(32.dp)
+                )
+            },
+            title = { Text("Rechazar reparación") },
+            text = {
+                Text(
+                    "¿Estás seguro de que quieres rechazar la reparación de ${rep.vehiculo} · ${rep.matricula}?" +
+                            "\n\nEsta acción no se puede deshacer."
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.rechazarReparacion(rep.id)
+                        reparacionARechazar = null
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) { Text("Rechazar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { reparacionARechazar = null }) {
+                    Text("Volver")
+                }
+            }
+        )
+    }
 }
 
- @Composable
+@Composable
 private fun ReparacionCard(
     rep: ReparacionResponse,
     yaValorada: Boolean,
@@ -356,9 +435,8 @@ private fun ReparacionCard(
     }
 }
 
-// ──────────────────────────────────────────────────────────────
+
 // Diálogo de valoración
-// ──────────────────────────────────────────────────────────────
 @Composable
 private fun ValoracionDialog(
     vehiculo: String,

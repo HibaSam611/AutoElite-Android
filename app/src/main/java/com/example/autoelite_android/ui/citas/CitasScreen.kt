@@ -5,15 +5,13 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,8 +25,6 @@ import com.example.autoelite_android.model.CitaResponse
 import com.example.autoelite_android.model.VehiculoResponse
 import com.example.autoelite_android.navigation.AutoEliteBottomBar
 import java.text.SimpleDateFormat
-import java.time.LocalDate
-import java.time.format.TextStyle
 import java.util.*
 
 private val estadosCita = listOf("PENDIENTE", "CONFIRMADA", "CANCELADA")
@@ -48,12 +44,14 @@ fun CitasScreen(
     val citas      by viewModel.citas.collectAsState()
     val vehiculos  by viewModel.vehiculos.collectAsState()
     val loading    by viewModel.loading.collectAsState()
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
     val error      by viewModel.error.collectAsState()
     val searchQuery   by viewModel.searchQuery.collectAsState()
     val estadoFilter  by viewModel.estadoFilter.collectAsState()
 
     var showDialog  by remember { mutableStateOf(false) }
     var showSearch  by remember { mutableStateOf(false) }
+    var citaACancelar by remember { mutableStateOf<CitaResponse?>(null) }
 
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(error) {
@@ -188,23 +186,63 @@ fun CitasScreen(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                     )
 
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                        contentPadding = PaddingValues(bottom = 88.dp)
+                    PullToRefreshBox(
+                        isRefreshing = isRefreshing,
+                        onRefresh = { viewModel.refresh() },
+                        modifier = Modifier.fillMaxSize()
                     ) {
-                        items(citas) { cita ->
-                            CitaCard(
-                                cita = cita,
-                                onCancelar = { viewModel.cancelarCita(cita.id) }
-                            )
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                            contentPadding = PaddingValues(bottom = 88.dp)
+                        ) {
+                            items(citas) { cita ->
+                                CitaCard(
+                                    cita = cita,
+                                    onCancelar = { citaACancelar = cita }
+                                )
+                            }
                         }
                     }
                 }
             }
         }
+    }
+
+    // Diálogo de confirmación para cancelar cita
+    citaACancelar?.let { cita ->
+        AlertDialog(
+            onDismissRequest = { citaACancelar = null },
+            icon = {
+                Icon(
+                    Icons.Default.Cancel, null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(32.dp)
+                )
+            },
+            title = { Text("Cancelar cita") },
+            text = {
+                Text("¿Estás seguro de que quieres cancelar la cita del ${cita.fecha} a las ${cita.hora}?")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.cancelarCita(cita.id)
+                        citaACancelar = null
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) { Text("Cancelar cita") }
+            },
+            dismissButton = {
+                TextButton(onClick = { citaACancelar = null }) {
+                    Text("Volver")
+                }
+            }
+        )
     }
 
     if (showDialog) {
@@ -220,9 +258,7 @@ fun CitasScreen(
     }
 }
 
-// ──────────────────────────────────────────────────────────────
 // Card de cita
-// ──────────────────────────────────────────────────────────────
 @Composable
 private fun CitaCard(cita: CitaResponse, onCancelar: () -> Unit) {
     val estadoColor = when (cita.estado) {
@@ -279,9 +315,8 @@ private fun CitaCard(cita: CitaResponse, onCancelar: () -> Unit) {
     }
 }
 
-// ──────────────────────────────────────────────────────────────
+
 // Diálogo de nueva cita con selección de fecha + grid de horas
-// ──────────────────────────────────────────────────────────────
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun NuevaCitaDialog(
@@ -438,8 +473,6 @@ private fun NuevaCitaDialog(
                             }
                         }
                     } else {
-                        // Mostrar todas las horas: disponibles seleccionables, ocupadas desactivadas
-                        // Usamos un FlowRow manual con Rows
                         val chunked = todasLasHoras.chunked(4)
                         chunked.forEach { fila ->
                             Row(
@@ -451,7 +484,6 @@ private fun NuevaCitaDialog(
                                     val seleccionada = hora == horaSeleccionada
 
                                     if (seleccionada) {
-                                        // Hora seleccionada: botón relleno
                                         Button(
                                             onClick = { horaSeleccionada = hora },
                                             modifier = Modifier
@@ -462,7 +494,6 @@ private fun NuevaCitaDialog(
                                             Text(hora, fontSize = 13.sp)
                                         }
                                     } else if (disponible) {
-                                        // Hora disponible: botón outlined
                                         OutlinedButton(
                                             onClick = { horaSeleccionada = hora },
                                             modifier = Modifier
@@ -473,7 +504,6 @@ private fun NuevaCitaDialog(
                                             Text(hora, fontSize = 13.sp)
                                         }
                                     } else {
-                                        // Hora ocupada: botón desactivado con tachado
                                         OutlinedButton(
                                             onClick = {},
                                             modifier = Modifier
@@ -494,7 +524,6 @@ private fun NuevaCitaDialog(
                                         }
                                     }
                                 }
-                                // Rellenar con espacios si la fila tiene menos de 4
                                 repeat(4 - fila.size) {
                                     Spacer(Modifier.weight(1f))
                                 }
@@ -526,7 +555,6 @@ private fun NuevaCitaDialog(
                         }
                     }
                 } else {
-                    // No se ha seleccionado fecha aún
                     Card(
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surfaceVariant

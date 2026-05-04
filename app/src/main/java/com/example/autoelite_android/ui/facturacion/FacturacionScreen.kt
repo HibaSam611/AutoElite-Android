@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,6 +39,7 @@ fun FacturacionScreen(
 ) {
     val facturas       by viewModel.facturas.collectAsState()
     val loading        by viewModel.loading.collectAsState()
+    val isRefreshing   by viewModel.isRefreshing.collectAsState()
     val error          by viewModel.error.collectAsState()
     val mensaje        by viewModel.mensaje.collectAsState()
     val paymentConfig  by viewModel.paymentConfig.collectAsState()
@@ -48,7 +50,7 @@ fun FacturacionScreen(
     val scope = rememberCoroutineScope()
 
     var showSearch by remember { mutableStateOf(false) }
-    var generandoPdf by remember { mutableStateOf<Long?>(null) } // ID de factura generando
+    var generandoPdf by remember { mutableStateOf<Long?>(null) }
 
     // Stripe PaymentSheet
     val paymentSheet = rememberPaymentSheet { result ->
@@ -113,7 +115,7 @@ fun FacturacionScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // ── Barra de búsqueda ──
+            // Barra de búsqueda
             AnimatedVisibility(visible = showSearch) {
                 OutlinedTextField(
                     value = searchQuery,
@@ -134,7 +136,7 @@ fun FacturacionScreen(
                 )
             }
 
-            // ── Chips de filtro ──
+            // Chips de filtro
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -176,7 +178,7 @@ fun FacturacionScreen(
                 }
             }
 
-            // ── Contenido ──
+            // Contenido
             when {
                 loading -> Box(
                     Modifier.fillMaxSize(),
@@ -209,58 +211,64 @@ fun FacturacionScreen(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                     )
 
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                        contentPadding = PaddingValues(bottom = 16.dp)
+                    PullToRefreshBox(
+                        isRefreshing = isRefreshing,
+                        onRefresh = { viewModel.refresh() },
+                        modifier = Modifier.fillMaxSize()
                     ) {
-                        items(facturas) { factura ->
-                            FacturaCard(
-                                factura = factura,
-                                paymentLoading = paymentLoading,
-                                generandoPdf = generandoPdf == factura.id,
-                                onPagar = { viewModel.iniciarPago(factura.id) },
-                                onCompartirPdf = {
-                                    scope.launch {
-                                        generandoPdf = factura.id
-                                        try {
-                                            val archivo = withContext(Dispatchers.IO) {
-                                                PdfGenerator.generarFacturaPdf(context, factura)
-                                            }
-                                            val uri = FileProvider.getUriForFile(
-                                                context,
-                                                "${context.packageName}.fileprovider",
-                                                archivo
-                                            )
-                                            val intent = Intent(Intent.ACTION_SEND).apply {
-                                                type = "application/pdf"
-                                                putExtra(Intent.EXTRA_STREAM, uri)
-                                                putExtra(
-                                                    Intent.EXTRA_SUBJECT,
-                                                    "Factura ${factura.numeroFactura} - AutoElite"
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                            contentPadding = PaddingValues(bottom = 16.dp)
+                        ) {
+                            items(facturas) { factura ->
+                                FacturaCard(
+                                    factura = factura,
+                                    paymentLoading = paymentLoading,
+                                    generandoPdf = generandoPdf == factura.id,
+                                    onPagar = { viewModel.iniciarPago(factura.id) },
+                                    onCompartirPdf = {
+                                        scope.launch {
+                                            generandoPdf = factura.id
+                                            try {
+                                                val archivo = withContext(Dispatchers.IO) {
+                                                    PdfGenerator.generarFacturaPdf(context, factura)
+                                                }
+                                                val uri = FileProvider.getUriForFile(
+                                                    context,
+                                                    "${context.packageName}.fileprovider",
+                                                    archivo
                                                 )
-                                                putExtra(
-                                                    Intent.EXTRA_TEXT,
-                                                    "Adjunto la factura ${factura.numeroFactura} " +
-                                                            "por importe de ${factura.total} €."
+                                                val intent = Intent(Intent.ACTION_SEND).apply {
+                                                    type = "application/pdf"
+                                                    putExtra(Intent.EXTRA_STREAM, uri)
+                                                    putExtra(
+                                                        Intent.EXTRA_SUBJECT,
+                                                        "Factura ${factura.numeroFactura} - AutoElite"
+                                                    )
+                                                    putExtra(
+                                                        Intent.EXTRA_TEXT,
+                                                        "Adjunto la factura ${factura.numeroFactura} " +
+                                                                "por importe de ${factura.total} €."
+                                                    )
+                                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                                }
+                                                context.startActivity(
+                                                    Intent.createChooser(intent, "Compartir factura")
                                                 )
-                                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                            } catch (e: Exception) {
+                                                snackbarHostState.showSnackbar(
+                                                    "Error al generar el PDF"
+                                                )
+                                            } finally {
+                                                generandoPdf = null
                                             }
-                                            context.startActivity(
-                                                Intent.createChooser(intent, "Compartir factura")
-                                            )
-                                        } catch (e: Exception) {
-                                            snackbarHostState.showSnackbar(
-                                                "Error al generar el PDF"
-                                            )
-                                        } finally {
-                                            generandoPdf = null
                                         }
                                     }
-                                }
-                            )
+                                )
+                            }
                         }
                     }
                 }

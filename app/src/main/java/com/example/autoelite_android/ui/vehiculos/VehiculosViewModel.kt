@@ -20,6 +20,9 @@ class VehiculosViewModel : ViewModel() {
     private val _loading = MutableStateFlow(false)
     val loading: StateFlow<Boolean> = _loading
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing
+
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
 
@@ -42,6 +45,21 @@ class VehiculosViewModel : ViewModel() {
             } finally {
                 _loading.value = false
             }
+        }
+    }
+
+    fun refresh() {
+        val clienteId = SessionManager.clienteId
+        if (clienteId == -1L) return
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            try {
+                val response = api.getVehiculosByCliente(clienteId)
+                if (response.isSuccessful) {
+                    _vehiculos.value = response.body() ?: emptyList()
+                }
+            } catch (_: Exception) { }
+            _isRefreshing.value = false
         }
     }
 

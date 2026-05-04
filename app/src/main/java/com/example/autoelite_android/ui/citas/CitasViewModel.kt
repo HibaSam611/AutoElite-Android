@@ -26,6 +26,9 @@ class CitasViewModel : ViewModel() {
     private val _loading = MutableStateFlow(false)
     val loading: StateFlow<Boolean> = _loading
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing
+
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
 
@@ -91,6 +94,21 @@ class CitasViewModel : ViewModel() {
         }
     }
 
+    fun refresh() {
+        val clienteId = SessionManager.clienteId
+        if (clienteId == -1L) return
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            try {
+                val response = api.getCitasByCliente(clienteId)
+                if (response.isSuccessful) {
+                    _citasRaw.value = response.body() ?: emptyList()
+                }
+            } catch (_: Exception) { }
+            _isRefreshing.value = false
+        }
+    }
+
     private fun cargarVehiculos() {
         val clienteId = SessionManager.clienteId
         if (clienteId == -1L) return
@@ -104,9 +122,7 @@ class CitasViewModel : ViewModel() {
         }
     }
 
-    /**
-     * Pide al backend las horas libres para [fechaIso] (formato yyyy-MM-dd).
-     */
+     //Pide al backend las horas libres para [fechaIso] (formato yyyy-MM-dd).
     fun cargarHorasDisponibles(fechaIso: String) {
         viewModelScope.launch {
             _horasLoading.value = true

@@ -23,6 +23,9 @@ class ReparacionesViewModel : ViewModel() {
     private val _loading = MutableStateFlow(false)
     val loading: StateFlow<Boolean> = _loading
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing
+
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
 
@@ -76,6 +79,21 @@ class ReparacionesViewModel : ViewModel() {
         }
     }
 
+    fun refresh() {
+        val clienteId = SessionManager.clienteId
+        if (clienteId == -1L) return
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            try {
+                val response = api.getReparacionesByCliente(clienteId)
+                if (response.isSuccessful) {
+                    _reparacionesRaw.value = response.body() ?: emptyList()
+                }
+            } catch (_: Exception) { }
+            _isRefreshing.value = false
+        }
+    }
+
     private fun cargarValoradasExistentes() {
         val clienteId = SessionManager.clienteId
         if (clienteId == -1L) return
@@ -117,11 +135,6 @@ class ReparacionesViewModel : ViewModel() {
         }
     }
 
-    fun setSearch(query: String) { searchQuery.value = query }
-    fun setEstadoFilter(estado: String?) { estadoFilter.value = estado }
-    fun resetError()   { _error.value   = null }
-    fun resetMensaje() { _mensaje.value = null }
-
     fun aceptarReparacion(reparacionId: Long) {
         viewModelScope.launch {
             try {
@@ -153,4 +166,9 @@ class ReparacionesViewModel : ViewModel() {
             }
         }
     }
+
+    fun setSearch(query: String) { searchQuery.value = query }
+    fun setEstadoFilter(estado: String?) { estadoFilter.value = estado }
+    fun resetError()   { _error.value   = null }
+    fun resetMensaje() { _mensaje.value = null }
 }
