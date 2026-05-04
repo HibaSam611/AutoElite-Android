@@ -24,6 +24,8 @@ import androidx.navigation.NavController
 import com.example.autoelite_android.model.CitaResponse
 import com.example.autoelite_android.model.VehiculoResponse
 import com.example.autoelite_android.navigation.AutoEliteBottomBar
+import com.example.autoelite_android.ui.components.CitaCardSkeleton
+import com.example.autoelite_android.ui.components.ShimmerList
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -146,10 +148,9 @@ fun CitasScreen(
             // Contenido
             when {
                 loading -> {
-                    Box(
-                        Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) { CircularProgressIndicator() }
+                    ShimmerList(count = 5) {
+                        CitaCardSkeleton()
+                    }
                 }
                 citas.isEmpty() -> {
                     Box(
@@ -178,7 +179,6 @@ fun CitasScreen(
                     }
                 }
                 else -> {
-                    // Contador de resultados
                     Text(
                         "${citas.size} cita${if (citas.size != 1) "s" else ""}",
                         fontSize = 12.sp,
@@ -258,7 +258,6 @@ fun CitasScreen(
     }
 }
 
-// Card de cita
 @Composable
 private fun CitaCard(cita: CitaResponse, onCancelar: () -> Unit) {
     val estadoColor = when (cita.estado) {
@@ -275,17 +274,10 @@ private fun CitaCard(cita: CitaResponse, onCancelar: () -> Unit) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.width(52.dp)
             ) {
-                Text(
-                    cita.fecha.take(2),
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 22.sp,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    cita.fecha.drop(3).take(3),
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Text(cita.fecha.take(2), fontWeight = FontWeight.ExtraBold,
+                    fontSize = 22.sp, color = MaterialTheme.colorScheme.primary)
+                Text(cita.fecha.drop(3).take(3), fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             HorizontalDivider(
                 modifier = Modifier.width(1.dp).height(48.dp).padding(horizontal = 8.dp)
@@ -293,30 +285,22 @@ private fun CitaCard(cita: CitaResponse, onCancelar: () -> Unit) {
             Spacer(Modifier.width(8.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(cita.tipo ?: "Servicio", fontWeight = FontWeight.SemiBold)
-                Text(
-                    "${cita.hora} h", fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Text("${cita.hora} h", fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(4.dp))
-                SuggestionChip(
-                    onClick = {},
-                    label = { Text(cita.estado, fontSize = 11.sp, color = estadoColor) }
-                )
+                SuggestionChip(onClick = {},
+                    label = { Text(cita.estado, fontSize = 11.sp, color = estadoColor) })
             }
             if (cita.estado != "CANCELADA") {
                 IconButton(onClick = onCancelar) {
-                    Icon(
-                        Icons.Default.Cancel, "Cancelar",
-                        tint = MaterialTheme.colorScheme.error
-                    )
+                    Icon(Icons.Default.Cancel, "Cancelar",
+                        tint = MaterialTheme.colorScheme.error)
                 }
             }
         }
     }
 }
 
-
-// Diálogo de nueva cita con selección de fecha + grid de horas
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun NuevaCitaDialog(
@@ -326,22 +310,17 @@ private fun NuevaCitaDialog(
     onConfirmar: (Long, String, String) -> Unit
 ) {
     var descripcion by remember { mutableStateOf("") }
-
     var vehiculoSeleccionado by remember { mutableStateOf<VehiculoResponse?>(null) }
-    var vehiculoExpanded     by remember { mutableStateOf(false) }
-
-    // Fecha
+    var vehiculoExpanded by remember { mutableStateOf(false) }
     var mostrarDatePicker by remember { mutableStateOf(false) }
-    val datePickerState   = rememberDatePickerState()
+    val datePickerState = rememberDatePickerState()
     var fechaIso by remember { mutableStateOf<String?>(null) }
     val fechaFormateada = remember(datePickerState.selectedDateMillis) {
         datePickerState.selectedDateMillis?.let { millis ->
-            SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                .format(Date(millis))
+            SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(millis))
         } ?: ""
     }
 
-    // Cuando cambia la fecha, pedir horas disponibles
     LaunchedEffect(datePickerState.selectedDateMillis) {
         datePickerState.selectedDateMillis?.let { millis ->
             val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
@@ -351,17 +330,12 @@ private fun NuevaCitaDialog(
         }
     }
 
-    // Hora seleccionada
     var horaSeleccionada by remember { mutableStateOf<String?>(null) }
-
-    // Limpiar hora al cambiar fecha
-    LaunchedEffect(fechaIso) {
-        horaSeleccionada = null
-    }
+    LaunchedEffect(fechaIso) { horaSeleccionada = null }
 
     val horasDisponibles by viewModel.horasDisponibles.collectAsState()
-    val horasLoading     by viewModel.horasLoading.collectAsState()
-    val todasLasHoras    = viewModel.todasLasHoras
+    val horasLoading by viewModel.horasLoading.collectAsState()
+    val todasLasHoras = viewModel.todasLasHoras
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -371,216 +345,147 @@ private fun NuevaCitaDialog(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Selector de vehículo
-                ExposedDropdownMenuBox(
-                    expanded = vehiculoExpanded,
-                    onExpandedChange = { vehiculoExpanded = it }
-                ) {
+                ExposedDropdownMenuBox(expanded = vehiculoExpanded,
+                    onExpandedChange = { vehiculoExpanded = it }) {
                     OutlinedTextField(
                         value = vehiculoSeleccionado?.let {
-                            "${it.marca} ${it.modelo} · ${it.matricula}"
-                        } ?: "",
+                            "${it.marca} ${it.modelo} · ${it.matricula}" } ?: "",
                         onValueChange = {},
                         readOnly = true,
                         label = { Text("Vehículo") },
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = vehiculoExpanded)
-                        },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = vehiculoExpanded) },
                         modifier = Modifier.fillMaxWidth().menuAnchor()
                     )
-                    ExposedDropdownMenu(
-                        expanded = vehiculoExpanded,
-                        onDismissRequest = { vehiculoExpanded = false }
-                    ) {
+                    ExposedDropdownMenu(expanded = vehiculoExpanded,
+                        onDismissRequest = { vehiculoExpanded = false }) {
                         if (vehiculos.isEmpty()) {
-                            DropdownMenuItem(
-                                text = { Text("No tienes vehículos registrados") },
-                                onClick = { vehiculoExpanded = false }
-                            )
+                            DropdownMenuItem(text = { Text("No tienes vehículos registrados") },
+                                onClick = { vehiculoExpanded = false })
                         } else {
                             vehiculos.forEach { v ->
                                 DropdownMenuItem(
                                     text = { Text("${v.marca} ${v.modelo} · ${v.matricula}") },
-                                    onClick = {
-                                        vehiculoSeleccionado = v
-                                        vehiculoExpanded = false
-                                    }
-                                )
+                                    onClick = { vehiculoSeleccionado = v; vehiculoExpanded = false })
                             }
                         }
                     }
                 }
 
-                // ── Selector de fecha ──
                 OutlinedTextField(
-                    value = fechaFormateada,
-                    onValueChange = {},
-                    readOnly = true,
+                    value = fechaFormateada, onValueChange = {}, readOnly = true,
                     label = { Text("Fecha") },
                     leadingIcon = { Icon(Icons.Default.CalendarMonth, null) },
                     modifier = Modifier.fillMaxWidth(),
                     interactionSource = remember {
                         androidx.compose.foundation.interaction.MutableInteractionSource()
-                    }.also { interactionSource ->
-                        LaunchedEffect(interactionSource) {
-                            interactionSource.interactions.collect { interaction ->
-                                if (interaction is androidx.compose.foundation.interaction.PressInteraction.Release) {
+                    }.also { src ->
+                        LaunchedEffect(src) {
+                            src.interactions.collect {
+                                if (it is androidx.compose.foundation.interaction.PressInteraction.Release)
                                     mostrarDatePicker = true
-                                }
                             }
                         }
                     }
                 )
 
-                // Grid de horas disponibles
                 if (fechaIso != null) {
-                    Text(
-                        "Horarios disponibles:",
+                    Text("Horarios disponibles:",
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 14.sp
                     )
-
                     if (horasLoading) {
                         Box(
-                            modifier = Modifier.fillMaxWidth().height(100.dp),
+                            Modifier.fillMaxWidth().height(100.dp),
                             contentAlignment = Alignment.Center
-                        ) {
+                        )
+                        {
                             CircularProgressIndicator(modifier = Modifier.size(28.dp))
                         }
                     } else if (horasDisponibles.isEmpty()) {
-                        // Día completo
                         Card(
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer
-                            ),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
+                            Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
-                                    Icons.Default.EventBusy, null,
+                                    Icons.Default.EventBusy,
+                                    null,
                                     tint = MaterialTheme.colorScheme.error,
                                     modifier = Modifier.size(24.dp)
                                 )
                                 Spacer(Modifier.width(8.dp))
-                                Text(
-                                    "No hay horas disponibles para este día. Selecciona otra fecha.",
-                                    fontSize = 13.sp,
-                                    color = MaterialTheme.colorScheme.onErrorContainer
-                                )
+                                Text("No hay horas disponibles para este día.", fontSize = 13.sp,
+                                    color = MaterialTheme.colorScheme.onErrorContainer)
                             }
                         }
                     } else {
-                        val chunked = todasLasHoras.chunked(4)
-                        chunked.forEach { fila ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
+                        todasLasHoras.chunked(4).forEach { fila ->
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 fila.forEach { hora ->
                                     val disponible = hora in horasDisponibles
                                     val seleccionada = hora == horaSeleccionada
-
                                     if (seleccionada) {
-                                        Button(
-                                            onClick = { horaSeleccionada = hora },
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .height(40.dp),
-                                            contentPadding = PaddingValues(0.dp)
-                                        ) {
-                                            Text(hora, fontSize = 13.sp)
-                                        }
+                                        Button(onClick = { horaSeleccionada = hora },
+                                            modifier = Modifier.weight(1f).height(40.dp),
+                                            contentPadding = PaddingValues(0.dp)) { Text(hora, fontSize = 13.sp) }
                                     } else if (disponible) {
-                                        OutlinedButton(
-                                            onClick = { horaSeleccionada = hora },
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .height(40.dp),
-                                            contentPadding = PaddingValues(0.dp)
-                                        ) {
-                                            Text(hora, fontSize = 13.sp)
-                                        }
+                                        OutlinedButton(onClick = { horaSeleccionada = hora },
+                                            modifier = Modifier.weight(1f).height(40.dp),
+                                            contentPadding = PaddingValues(0.dp)) { Text(hora, fontSize = 13.sp) }
                                     } else {
-                                        OutlinedButton(
-                                            onClick = {},
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .height(40.dp),
-                                            enabled = false,
-                                            contentPadding = PaddingValues(0.dp),
+                                        OutlinedButton(onClick = {}, modifier = Modifier.weight(1f).height(40.dp),
+                                            enabled = false, contentPadding = PaddingValues(0.dp),
                                             colors = ButtonDefaults.outlinedButtonColors(
                                                 disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                                                disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-                                            )
-                                        ) {
-                                            Text(
-                                                hora,
-                                                fontSize = 13.sp,
-                                                textDecoration = androidx.compose.ui.text.style.TextDecoration.LineThrough
-                                            )
+                                                disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f))) {
+                                            Text(hora, fontSize = 13.sp,
+                                                textDecoration = androidx.compose.ui.text.style.TextDecoration.LineThrough)
                                         }
                                     }
                                 }
-                                repeat(4 - fila.size) {
-                                    Spacer(Modifier.weight(1f))
-                                }
+                                repeat(4 - fila.size) { Spacer(Modifier.weight(1f)) }
                             }
                             Spacer(Modifier.height(4.dp))
                         }
-
-                        // Leyenda
                         Spacer(Modifier.height(4.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                             LeyendaItem(
-                                color = MaterialTheme.colorScheme.surface,
-                                borderColor = MaterialTheme.colorScheme.outline,
-                                texto = "Disponible"
+                                MaterialTheme.colorScheme.surface,
+                                MaterialTheme.colorScheme.outline,
+                                "Disponible"
                             )
                             LeyendaItem(
-                                color = MaterialTheme.colorScheme.primary,
-                                borderColor = MaterialTheme.colorScheme.primary,
-                                texto = "Seleccionada"
+                                MaterialTheme.colorScheme.primary,
+                                MaterialTheme.colorScheme.primary,
+                                "Seleccionada"
                             )
                             LeyendaItem(
-                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                                borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                                texto = "Ocupada"
+                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                                "Ocupada"
                             )
                         }
                     }
                 } else {
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        ),
+                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                Icons.Default.Info, null,
+                        Row(Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically)
+                        {
+                            Icon(Icons.Default.Info,
+                                null,
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(20.dp)
                             )
                             Spacer(Modifier.width(8.dp))
-                            Text(
-                                "Selecciona una fecha para ver los horarios disponibles",
+                            Text("Selecciona una fecha para ver los horarios disponibles",
                                 fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
 
-                // ── Descripción / tipo de servicio ──
                 OutlinedTextField(
                     value = descripcion,
                     onValueChange = { descripcion = it },
@@ -588,47 +493,44 @@ private fun NuevaCitaDialog(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
-
-                Text(
-                    "El taller confirmará la disponibilidad",
+                Text("El taller confirmará la disponibilidad",
                     fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },
         confirmButton = {
-            Button(
-                onClick = {
-                    val v = vehiculoSeleccionado ?: return@Button
-                    val fecha = fechaIso ?: return@Button
-                    val hora = horaSeleccionada ?: return@Button
-                    val isoFecha = "${fecha}T${hora}:00"
-                    onConfirmar(v.id, isoFecha, descripcion)
-                },
-                enabled = vehiculoSeleccionado != null
-                        && fechaIso != null
-                        && horaSeleccionada != null
-                        && descripcion.isNotBlank()
+            Button(onClick = {
+                val v = vehiculoSeleccionado ?: return@Button
+                val fecha = fechaIso ?: return@Button
+                val hora = horaSeleccionada ?: return@Button
+                onConfirmar(v.id, "${fecha}T${hora}:00", descripcion)
+            }, enabled = vehiculoSeleccionado != null && fechaIso != null
+                    && horaSeleccionada != null && descripcion.isNotBlank()
             ) { Text("Solicitar") }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancelar") }
+            TextButton(onClick = onDismiss)
+            { Text("Cancelar") }
         }
     )
 
-    // DatePicker dialog
     if (mostrarDatePicker) {
-        DatePickerDialog(
-            onDismissRequest = { mostrarDatePicker = false },
+        DatePickerDialog(onDismissRequest = { mostrarDatePicker = false },
             confirmButton = {
-                TextButton(onClick = { mostrarDatePicker = false }) { Text("Aceptar") }
+                TextButton(
+                    onClick = { mostrarDatePicker = false }
+                )
+                {
+                    Text("Aceptar")
+                }
             },
             dismissButton = {
-                TextButton(onClick = { mostrarDatePicker = false }) { Text("Cancelar") }
+                TextButton(
+                    onClick = { mostrarDatePicker = false }
+                )
+                { Text("Cancelar") }
             }
-        ) {
-            DatePicker(state = datePickerState)
-        }
+        ) { DatePicker(state = datePickerState) }
     }
 }
 
@@ -639,12 +541,12 @@ private fun LeyendaItem(
     texto: String
 ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Surface(
-            modifier = Modifier.size(12.dp),
+        Surface(modifier = Modifier.size(12.dp),
             shape = MaterialTheme.shapes.extraSmall,
-            color = color,
-            border = BorderStroke(1.dp, borderColor)
-        ) {}
+            color = color, border = BorderStroke(1.dp, borderColor))
+        {
+
+        }
         Spacer(Modifier.width(4.dp))
         Text(texto, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }

@@ -26,6 +26,9 @@ class VehiculosViewModel : ViewModel() {
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
 
+    private val _mensaje = MutableStateFlow<String?>(null)
+    val mensaje: StateFlow<String?> = _mensaje
+
     init { cargarVehiculos() }
 
     fun cargarVehiculos() {
@@ -71,12 +74,18 @@ class VehiculosViewModel : ViewModel() {
             _loading.value = true
             try {
                 val response = api.crearVehiculo(
-                    VehiculoRequest(clienteId = clienteId, marca = marca,
+                    VehiculoRequest(
+                        clienteId = clienteId, marca = marca,
                         modelo = modelo, anio = anio, matricula = matricula,
-                        kilometraje = kilometraje)
+                        kilometraje = kilometraje
+                    )
                 )
-                if (response.isSuccessful) cargarVehiculos()
-                else _error.value = "Error al crear vehículo"
+                if (response.isSuccessful) {
+                    _mensaje.value = "Vehículo añadido"
+                    cargarVehiculos()
+                } else {
+                    _error.value = "Error al crear vehículo"
+                }
             } catch (e: Exception) {
                 _error.value = "Sin conexión"
             } finally {
@@ -85,5 +94,52 @@ class VehiculosViewModel : ViewModel() {
         }
     }
 
+    fun actualizarKilometraje(vehiculo: VehiculoResponse, nuevoKm: Int) {
+        viewModelScope.launch {
+            try {
+                val response = api.actualizarVehiculo(
+                    id = vehiculo.id,
+                    req = VehiculoRequest(
+                        clienteId = vehiculo.clienteId,
+                        marca = vehiculo.marca,
+                        modelo = vehiculo.modelo,
+                        anio = vehiculo.anio,
+                        matricula = vehiculo.matricula,
+                        kilometraje = nuevoKm
+                    )
+                )
+                if (response.isSuccessful) {
+                    _mensaje.value = "Kilometraje actualizado"
+                    cargarVehiculos()
+                } else {
+                    _error.value = "Error al actualizar"
+                }
+            } catch (e: Exception) {
+                _error.value = "Sin conexión"
+            }
+        }
+    }
+
+    fun eliminarVehiculo(vehiculoId: Long) {
+        viewModelScope.launch {
+            try {
+                val response = api.eliminarVehiculo(vehiculoId)
+                if (response.isSuccessful) {
+                    _mensaje.value = "Vehículo eliminado"
+                    cargarVehiculos()
+                } else {
+                    _error.value = when (response.code()) {
+                        409 -> "No se puede eliminar: tiene citas o reparaciones asociadas"
+                        404 -> "Vehículo no encontrado"
+                        else -> "Error al eliminar (${response.code()})"
+                    }
+                }
+            } catch (e: Exception) {
+                _error.value = "Sin conexión"
+            }
+        }
+    }
+
     fun resetError() { _error.value = null }
+    fun resetMensaje() { _mensaje.value = null }
 }

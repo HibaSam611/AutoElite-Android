@@ -26,7 +26,7 @@ interface ApiService {
         @Body body: Map<String, String>
     ): Response<Map<String, String>>
 
-    // ── Notificaciones in-app ──
+    // Notificaciones in-app
     @GET("api/notificaciones")
     suspend fun getNotificaciones(
         @Header("X-Firebase-UID") uid: String
@@ -76,6 +76,15 @@ interface ApiService {
 
     @POST("api/vehiculos")
     suspend fun crearVehiculo(@Body req: VehiculoRequest): Response<VehiculoResponse>
+
+    @PUT("api/vehiculos/{id}")
+    suspend fun actualizarVehiculo(
+        @Path("id") id: Long,
+        @Body req: VehiculoRequest
+    ): Response<VehiculoResponse>
+
+    @DELETE("api/vehiculos/{id}")
+    suspend fun eliminarVehiculo(@Path("id") id: Long): Response<Void>
 
     // Reparaciones
     @GET("api/reparaciones")

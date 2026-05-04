@@ -7,6 +7,7 @@ import com.example.autoelite_android.model.CitaResponse
 import com.example.autoelite_android.model.VehiculoResponse
 import com.example.autoelite_android.network.RetrofitClient
 import com.example.autoelite_android.util.SessionManager
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -79,6 +80,7 @@ class CitasViewModel : ViewModel() {
         if (clienteId == -1L) return
         viewModelScope.launch {
             _loading.value = true
+            delay(3000) // Simulación de carga
             try {
                 val response = api.getCitasByCliente(clienteId)
                 if (response.isSuccessful) {

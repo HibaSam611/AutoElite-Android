@@ -22,6 +22,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.autoelite_android.model.FacturaResponse
 import com.example.autoelite_android.navigation.AutoEliteBottomBar
+import com.example.autoelite_android.ui.components.FacturaCardSkeleton
+import com.example.autoelite_android.ui.components.ShimmerList
 import com.example.autoelite_android.util.PdfGenerator
 import com.stripe.android.PaymentConfiguration
 import com.stripe.android.paymentsheet.PaymentSheet
@@ -52,18 +54,11 @@ fun FacturacionScreen(
     var showSearch by remember { mutableStateOf(false) }
     var generandoPdf by remember { mutableStateOf<Long?>(null) }
 
-    // Stripe PaymentSheet
     val paymentSheet = rememberPaymentSheet { result ->
         when (result) {
-            is PaymentSheetResult.Completed -> {
-                viewModel.onPaymentSuccess(viewModel.lastClientSecret)
-            }
-            is PaymentSheetResult.Canceled -> {
-                viewModel.onPaymentCancelled()
-            }
-            is PaymentSheetResult.Failed -> {
-                viewModel.onPaymentError(result.error.localizedMessage)
-            }
+            is PaymentSheetResult.Completed -> viewModel.onPaymentSuccess(viewModel.lastClientSecret)
+            is PaymentSheetResult.Canceled -> viewModel.onPaymentCancelled()
+            is PaymentSheetResult.Failed -> viewModel.onPaymentError(result.error.localizedMessage)
         }
     }
 
@@ -75,199 +70,133 @@ fun FacturacionScreen(
                 configuration = PaymentSheet.Configuration(
                     merchantDisplayName = "AutoElite",
                     customer = PaymentSheet.CustomerConfiguration(
-                        id = config.customerId,
-                        ephemeralKeySecret = config.ephemeralKey
-                    ),
-                    allowsDelayedPaymentMethods = false
-                )
-            )
+                        id = config.customerId, ephemeralKeySecret = config.ephemeralKey),
+                    allowsDelayedPaymentMethods = false))
             viewModel.clearPaymentConfig()
         }
     }
 
     val snackbarHostState = remember { SnackbarHostState() }
-    LaunchedEffect(error) {
-        error?.let { snackbarHostState.showSnackbar(it); viewModel.resetError() }
-    }
-    LaunchedEffect(mensaje) {
-        mensaje?.let { snackbarHostState.showSnackbar(it); viewModel.resetMensaje() }
-    }
+    LaunchedEffect(error) { error?.let { snackbarHostState.showSnackbar(it); viewModel.resetError() } }
+    LaunchedEffect(mensaje) { mensaje?.let { snackbarHostState.showSnackbar(it); viewModel.resetMensaje() } }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Mis facturas") },
-                actions = {
-                    IconButton(onClick = { showSearch = !showSearch }) {
-                        Icon(
-                            if (showSearch) Icons.Default.SearchOff else Icons.Default.Search,
-                            contentDescription = "Buscar"
-                        )
-                    }
+            TopAppBar(title = { Text("Mis facturas") }, actions = {
+                IconButton(onClick = { showSearch = !showSearch }) {
+                    Icon(if (showSearch) Icons.Default.SearchOff else Icons.Default.Search, "Buscar")
                 }
-            )
+            })
         },
         bottomBar = { AutoEliteBottomBar(navController) },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            // Barra de búsqueda
+        Column(Modifier.fillMaxSize().padding(paddingValues)) {
             AnimatedVisibility(visible = showSearch) {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { viewModel.setSearch(it) },
+                OutlinedTextField(value = searchQuery, onValueChange = { viewModel.setSearch(it) },
                     placeholder = { Text("Buscar por nº factura, fecha, importe…") },
                     leadingIcon = { Icon(Icons.Default.Search, null) },
                     trailingIcon = {
-                        if (searchQuery.isNotBlank()) {
-                            IconButton(onClick = { viewModel.setSearch("") }) {
-                                Icon(Icons.Default.Clear, "Limpiar")
-                            }
-                        }
+                        if (searchQuery.isNotBlank())
+                        IconButton(onClick = { viewModel.setSearch("") })
+                        { Icon(Icons.Default.Clear, "Limpiar") }
                     },
-                    singleLine = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                )
+                    singleLine = true, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp))
             }
 
-            // Chips de filtro
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(bottom = 8.dp)
-            ) {
+                modifier = Modifier.padding(bottom = 8.dp)) {
                 item {
                     FilterChip(
-                        selected = pagoFilter == null,
-                        onClick = { viewModel.setPagoFilter(null) },
-                        label = { Text("Todas") },
-                        leadingIcon = if (pagoFilter == null) {{
-                            Icon(Icons.Default.Done, null, Modifier.size(16.dp))
-                        }} else null
+                    selected = pagoFilter == null,
+                    onClick = { viewModel.setPagoFilter(null) },
+                    label = { Text("Todas") },
+                    leadingIcon = if (pagoFilter == null)
+                    {
+                        { Icon(Icons.Default.Done,
+                            null,
+                            Modifier.size(16.dp))
+                        }
+                    } else null
+                )
+                }
+                item {
+                    FilterChip(selected = pagoFilter == false,
+                    onClick = { viewModel.setPagoFilter(if (pagoFilter == false) null else false) },
+                    label = { Text("Pendientes") },
+                    leadingIcon = if (pagoFilter == false) {
+                        { Icon(Icons.Default.Done,
+                            null,
+                            Modifier.size(16.dp)) }
+                    } else null
                     )
                 }
                 item {
-                    FilterChip(
-                        selected = pagoFilter == false,
-                        onClick = {
-                            viewModel.setPagoFilter(if (pagoFilter == false) null else false)
-                        },
-                        label = { Text("Pendientes") },
-                        leadingIcon = if (pagoFilter == false) {{
-                            Icon(Icons.Default.Done, null, Modifier.size(16.dp))
-                        }} else null
-                    )
-                }
-                item {
-                    FilterChip(
-                        selected = pagoFilter == true,
-                        onClick = {
-                            viewModel.setPagoFilter(if (pagoFilter == true) null else true)
-                        },
-                        label = { Text("Pagadas") },
-                        leadingIcon = if (pagoFilter == true) {{
-                            Icon(Icons.Default.Done, null, Modifier.size(16.dp))
-                        }} else null
+                    FilterChip(selected = pagoFilter == true,
+                    onClick = { viewModel.setPagoFilter(if (pagoFilter == true) null else true) },
+                    label = { Text("Pagadas") },
+                    leadingIcon = if (pagoFilter == true) {
+                        { Icon(Icons.Default.Done,
+                            null,
+                            Modifier.size(16.dp)) }}
+                    else null
                     )
                 }
             }
 
-            // Contenido
             when {
-                loading -> Box(
-                    Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) { CircularProgressIndicator() }
+                loading -> {
+                    ShimmerList(count = 4) {
+                        FacturaCardSkeleton()
+                    }
+                }
 
-                facturas.isEmpty() -> Box(
-                    Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
+                facturas.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.Receipt, null,
-                            modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.outline)
-                        Spacer(Modifier.height(12.dp))
-                        Text(
-                            if (searchQuery.isNotBlank() || pagoFilter != null)
-                                "No se encontraron facturas"
-                            else "No tienes facturas aún",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        Icon(
+                            Icons.Default.Receipt, null,
+                            modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.outline
                         )
+                        Spacer(Modifier.height(12.dp))
+                        Text(if (searchQuery.isNotBlank() || pagoFilter != null) "No se encontraron facturas"
+                        else "No tienes facturas aún", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
 
                 else -> {
-                    Text(
-                        "${facturas.size} factura${if (facturas.size != 1) "s" else ""}",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                    )
+                    Text("${facturas.size} factura${if (facturas.size != 1) "s" else ""}",
+                        fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
 
-                    PullToRefreshBox(
-                        isRefreshing = isRefreshing,
-                        onRefresh = { viewModel.refresh() },
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 16.dp),
+                    PullToRefreshBox(isRefreshing = isRefreshing, onRefresh = { viewModel.refresh() },
+                        modifier = Modifier.fillMaxSize()) {
+                        LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp),
-                            contentPadding = PaddingValues(bottom = 16.dp)
-                        ) {
+                            contentPadding = PaddingValues(bottom = 16.dp)) {
                             items(facturas) { factura ->
-                                FacturaCard(
-                                    factura = factura,
-                                    paymentLoading = paymentLoading,
+                                FacturaCard(factura = factura, paymentLoading = paymentLoading,
                                     generandoPdf = generandoPdf == factura.id,
                                     onPagar = { viewModel.iniciarPago(factura.id) },
                                     onCompartirPdf = {
                                         scope.launch {
                                             generandoPdf = factura.id
                                             try {
-                                                val archivo = withContext(Dispatchers.IO) {
-                                                    PdfGenerator.generarFacturaPdf(context, factura)
-                                                }
-                                                val uri = FileProvider.getUriForFile(
-                                                    context,
-                                                    "${context.packageName}.fileprovider",
-                                                    archivo
-                                                )
+                                                val archivo = withContext(Dispatchers.IO) { PdfGenerator.generarFacturaPdf(context, factura) }
+                                                val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", archivo)
                                                 val intent = Intent(Intent.ACTION_SEND).apply {
                                                     type = "application/pdf"
                                                     putExtra(Intent.EXTRA_STREAM, uri)
-                                                    putExtra(
-                                                        Intent.EXTRA_SUBJECT,
-                                                        "Factura ${factura.numeroFactura} - AutoElite"
-                                                    )
-                                                    putExtra(
-                                                        Intent.EXTRA_TEXT,
-                                                        "Adjunto la factura ${factura.numeroFactura} " +
-                                                                "por importe de ${factura.total} €."
-                                                    )
+                                                    putExtra(Intent.EXTRA_SUBJECT, "Factura ${factura.numeroFactura} - AutoElite")
+                                                    putExtra(Intent.EXTRA_TEXT, "Adjunto la factura ${factura.numeroFactura} por importe de ${factura.total} €.")
                                                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                                 }
-                                                context.startActivity(
-                                                    Intent.createChooser(intent, "Compartir factura")
-                                                )
-                                            } catch (e: Exception) {
-                                                snackbarHostState.showSnackbar(
-                                                    "Error al generar el PDF"
-                                                )
-                                            } finally {
-                                                generandoPdf = null
-                                            }
+                                                context.startActivity(Intent.createChooser(intent, "Compartir factura"))
+                                            } catch (e: Exception) { snackbarHostState.showSnackbar("Error al generar el PDF") }
+                                            finally { generandoPdf = null }
                                         }
-                                    }
-                                )
+                                    })
                             }
                         }
                     }
@@ -278,94 +207,50 @@ fun FacturacionScreen(
 }
 
 @Composable
-private fun FacturaCard(
-    factura: FacturaResponse,
-    paymentLoading: Boolean,
-    generandoPdf: Boolean,
-    onPagar: () -> Unit,
-    onCompartirPdf: () -> Unit
-) {
+private fun FacturaCard(factura: FacturaResponse, paymentLoading: Boolean,
+                        generandoPdf: Boolean, onPagar: () -> Unit, onCompartirPdf: () -> Unit) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column {
-            Row(
-                modifier = Modifier.padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    Icons.Default.Receipt, null,
-                    tint = if (factura.pagada) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(40.dp)
-                )
+            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Receipt, null,
+                    tint = if (factura.pagada) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(40.dp))
                 Spacer(Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
+                Column(Modifier.weight(1f)) {
                     Text(factura.numeroFactura, fontWeight = FontWeight.Bold)
-                    Text(factura.fecha, fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    factura.metodoPago?.let { metodo ->
-                        Text("Método: $metodo", fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.outline)
-                    }
+                    Text(factura.fecha, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    factura.metodoPago?.let { Text("Método: $it", fontSize = 11.sp, color = MaterialTheme.colorScheme.outline) }
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    Text("${factura.total} €",
-                        fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
-                    Text(
-                        if (factura.pagada) "✓ Pagada" else "Pendiente",
-                        fontSize = 11.sp,
-                        color = if (factura.pagada) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.error
-                    )
+                    Text("${factura.total} €", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+                    Text(if (factura.pagada) "✓ Pagada" else "Pendiente", fontSize = 11.sp,
+                        color = if (factura.pagada) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error)
                 }
             }
-
-            // ── Botones de acción ──
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Botón compartir PDF (siempre visible)
-                OutlinedButton(
-                    onClick = onCompartirPdf,
-                    enabled = !generandoPdf,
-                    modifier = if (factura.pagada) Modifier.fillMaxWidth()
-                    else Modifier.weight(1f)
-                ) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = onCompartirPdf, enabled = !generandoPdf,
+                    modifier = if (factura.pagada) Modifier.fillMaxWidth() else Modifier.weight(1f)) {
                     if (generandoPdf) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text("Generando…", fontSize = 13.sp)
-                    } else {
-                        Icon(Icons.Default.Share, null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text("Compartir PDF", fontSize = 13.sp)
+                        CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp);
+                        Spacer(Modifier.width(8.dp)); Text("Generando…", fontSize = 13.sp)
+                    }
+                    else {
+                        Icon(Icons.Default.Share, null, Modifier.size(18.dp));
+                        Spacer(Modifier.width(6.dp)); Text("Compartir PDF", fontSize = 13.sp)
                     }
                 }
-
-                // Botón pagar (solo si no está pagada)
                 if (!factura.pagada) {
-                    Button(
-                        onClick = onPagar,
-                        enabled = !paymentLoading,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        if (paymentLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                strokeWidth = 2.dp
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            Text("Pagando…", fontSize = 13.sp)
-                        } else {
-                            Icon(Icons.Default.CreditCard, null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(6.dp))
-                            Text("Pagar", fontSize = 13.sp)
+                    Button(onClick = onPagar, enabled = !paymentLoading, modifier = Modifier.weight(1f)) {
+                        if (paymentLoading)
+                        {
+                            CircularProgressIndicator(Modifier.size(16.dp),
+                                color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp);
+                            Spacer(Modifier.width(6.dp)); Text("Pagando…", fontSize = 13.sp)
+                        }
+                        else {
+                            Icon(Icons.Default.CreditCard, null, Modifier.size(18.dp));
+                            Spacer(Modifier.width(6.dp)); Text("Pagar", fontSize = 13.sp)
                         }
                     }
                 }
