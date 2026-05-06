@@ -1,5 +1,6 @@
 package com.example.autoelite_android.navigation
 
+import androidx.compose.animation.*
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -25,9 +26,21 @@ fun NavGraph(
 ) {
     NavHost(
         navController = navController,
-        startDestination = startDestination
+        startDestination = startDestination,
+        // Animaciones por defecto
+        enterTransition = { tabEnter },
+        exitTransition = { tabExit },
+        popEnterTransition = { tabEnter },
+        popExitTransition = { tabExit }
     ) {
-        composable(Screen.Login.route) {
+
+        composable(
+            route = Screen.Login.route,
+            enterTransition = { authEnter },
+            exitTransition = { authExit },
+            popEnterTransition = { authEnter },
+            popExitTransition = { authExit }
+        ) {
             LoginScreen(
                 onLoginSuccess = {
                     navController.navigate(Screen.Home.route) {
@@ -37,7 +50,14 @@ fun NavGraph(
                 onNavigateToRegister = { navController.navigate(Screen.Register.route) }
             )
         }
-        composable(Screen.Register.route) {
+
+        composable(
+            route = Screen.Register.route,
+            enterTransition = { slideInFromRight },
+            exitTransition = { slideOutToLeft },
+            popEnterTransition = { slideInFromLeft },
+            popExitTransition = { slideOutToRight }
+        ) {
             RegisterScreen(
                 onRegisterSuccess = {
                     navController.navigate(Screen.Home.route) {
@@ -47,15 +67,24 @@ fun NavGraph(
                 onNavigateToLogin = { navController.popBackStack() }
             )
         }
-        composable(Screen.Home.route) { HomeScreen(navController = navController) }
-        composable(Screen.Citas.route) { CitasScreen(navController = navController) }
-        composable(Screen.Vehiculos.route) { VehiculosScreen(navController = navController) }
-        composable(Screen.Reparaciones.route) { ReparacionesScreen(navController = navController) }
-        composable(Screen.Facturacion.route) { FacturacionScreen(navController = navController) }
-        composable(Screen.Crm.route) { CrmScreen(navController = navController) }
-        composable(Screen.Historial.route) { HistorialScreen(navController = navController) }
-        composable(Screen.Notificaciones.route) { NotificacionesScreen(navController = navController) }
-        composable(Screen.Perfil.route) {
+
+        composable(route = Screen.Home.route) {
+            HomeScreen(navController = navController)
+        }
+
+        composable(route = Screen.Citas.route) {
+            CitasScreen(navController = navController)
+        }
+
+        composable(route = Screen.Vehiculos.route) {
+            VehiculosScreen(navController = navController)
+        }
+
+        composable(route = Screen.Reparaciones.route) {
+            ReparacionesScreen(navController = navController)
+        }
+
+        composable(route = Screen.Perfil.route) {
             PerfilScreen(
                 navController = navController,
                 themeViewModel = themeViewModel,
@@ -65,6 +94,46 @@ fun NavGraph(
                     }
                 }
             )
+        }
+
+        composable(
+            route = Screen.Facturacion.route,
+            enterTransition = { slideInFromRight },
+            exitTransition = { slideOutToLeft },
+            popEnterTransition = { slideInFromLeft },
+            popExitTransition = { slideOutToRight }
+        ) {
+            FacturacionScreen(navController = navController)
+        }
+
+        composable(
+            route = Screen.Crm.route,
+            enterTransition = { slideInFromRight },
+            exitTransition = { slideOutToLeft },
+            popEnterTransition = { slideInFromLeft },
+            popExitTransition = { slideOutToRight }
+        ) {
+            CrmScreen(navController = navController)
+        }
+
+        composable(
+            route = Screen.Historial.route,
+            enterTransition = { slideInFromRight },
+            exitTransition = { slideOutToLeft },
+            popEnterTransition = { slideInFromLeft },
+            popExitTransition = { slideOutToRight }
+        ) {
+            HistorialScreen(navController = navController)
+        }
+
+        composable(
+            route = Screen.Notificaciones.route,
+            enterTransition = { slideInFromRight },
+            exitTransition = { slideOutToLeft },
+            popEnterTransition = { slideInFromLeft },
+            popExitTransition = { slideOutToRight }
+        ) {
+            NotificacionesScreen(navController = navController)
         }
     }
 }

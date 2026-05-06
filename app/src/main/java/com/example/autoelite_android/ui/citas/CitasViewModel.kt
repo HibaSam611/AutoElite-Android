@@ -33,7 +33,7 @@ class CitasViewModel : ViewModel() {
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
 
-    // ── Horas disponibles ──
+    // Horas disponibles
     private val _horasDisponibles = MutableStateFlow<List<String>>(emptyList())
     val horasDisponibles: StateFlow<List<String>> = _horasDisponibles
 
@@ -80,7 +80,6 @@ class CitasViewModel : ViewModel() {
         if (clienteId == -1L) return
         viewModelScope.launch {
             _loading.value = true
-            delay(3000) // Simulación de carga
             try {
                 val response = api.getCitasByCliente(clienteId)
                 if (response.isSuccessful) {
