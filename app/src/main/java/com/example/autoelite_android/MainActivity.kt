@@ -2,6 +2,7 @@ package com.example.autoelite_android
 
 import android.Manifest
 import android.animation.ObjectAnimator
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -23,6 +24,7 @@ import com.example.autoelite_android.navigation.NavGraph
 import com.example.autoelite_android.notifications.AutoEliteMessagingService
 import com.example.autoelite_android.ui.theme.AutoEliteAndroidTheme
 import com.example.autoelite_android.ui.theme.ThemeViewModel
+import com.example.autoelite_android.util.LocaleManager
 import com.example.autoelite_android.util.SessionManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.messaging.FirebaseMessaging
@@ -38,12 +40,19 @@ class MainActivity : ComponentActivity() {
         if (granted) registrarTokenFcm()
     }
 
+    /**
+     * Aplica el idioma guardado ANTES de que se infle ningún layout.
+     */
+    override fun attachBaseContext(newBase: Context) {
+        SessionManager.init(newBase)
+        super.attachBaseContext(LocaleManager.applyLocale(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        SessionManager.init(applicationContext)
         AutoEliteMessagingService.crearCanal(this)
         pedirPermisoNotificaciones()
 

@@ -13,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -21,6 +22,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.autoelite_android.R
 
 @Composable
 fun LoginScreen(
@@ -34,7 +36,6 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     var showPass by remember { mutableStateOf(false) }
 
-    // Reaccionar al estado
     LaunchedEffect(uiState) {
         if (uiState is AuthUiState.Success) {
             onLoginSuccess()
@@ -51,27 +52,25 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Logo / Título
             Spacer(Modifier.height(64.dp))
             Text(
-                text = "AutoElite",
+                text = stringResource(R.string.app_name),
                 fontSize = 36.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
-                text = "Gestión de talleres",
+                text = stringResource(R.string.app_tagline),
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Spacer(Modifier.height(48.dp))
 
-            // Email
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
-                label = { Text("Correo electrónico") },
+                label = { Text(stringResource(R.string.login_email)) },
                 leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 singleLine = true,
@@ -81,17 +80,16 @@ fun LoginScreen(
 
             Spacer(Modifier.height(12.dp))
 
-            //  Contraseña
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Contraseña") },
+                label = { Text(stringResource(R.string.login_password)) },
                 leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
                 trailingIcon = {
                     IconButton(onClick = { showPass = !showPass }) {
                         Icon(
                             if (showPass) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                            contentDescription = if (showPass) "Ocultar" else "Mostrar"
+                            contentDescription = if (showPass) stringResource(R.string.login_hide_password) else stringResource(R.string.login_show_password)
                         )
                     }
                 },
@@ -103,7 +101,6 @@ fun LoginScreen(
                 isError = uiState is AuthUiState.Error
             )
 
-            // Error
             if (uiState is AuthUiState.Error) {
                 Spacer(Modifier.height(8.dp))
                 Text(
@@ -116,7 +113,6 @@ fun LoginScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            // Botón Login
             Button(
                 onClick = { viewModel.login(email, password) },
                 modifier = Modifier
@@ -131,17 +127,16 @@ fun LoginScreen(
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Text("Iniciar sesión", fontSize = 16.sp)
+                    Text(stringResource(R.string.login_button), fontSize = 16.sp)
                 }
             }
 
             Spacer(Modifier.height(16.dp))
 
-            // Ir a Registro
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("¿No tienes cuenta?", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.login_no_account), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 TextButton(onClick = onNavigateToRegister) {
-                    Text("Regístrate")
+                    Text(stringResource(R.string.login_register_link))
                 }
             }
 

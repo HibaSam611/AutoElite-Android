@@ -10,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -18,6 +19,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.autoelite_android.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,10 +48,10 @@ fun RegisterScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Crear cuenta") },
+                title = { Text(stringResource(R.string.register_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateToLogin) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.action_back))
                     }
                 }
             )
@@ -63,30 +65,30 @@ fun RegisterScreen(
                 .padding(horizontal = 32.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Únete a AutoElite", fontSize = 24.sp,
+            Text(stringResource(R.string.register_subtitle), fontSize = 24.sp,
                 fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-            Text("Crea tu cuenta para gestionar tus citas y vehículos",
+            Text(stringResource(R.string.register_description),
                 fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center)
 
             Spacer(Modifier.height(24.dp))
 
             OutlinedTextField(value = nombre, onValueChange = { nombre = it },
-                label = { Text("Nombre") },
+                label = { Text(stringResource(R.string.register_name)) },
                 leadingIcon = { Icon(Icons.Default.Person, null) },
                 singleLine = true, modifier = Modifier.fillMaxWidth())
 
             Spacer(Modifier.height(10.dp))
 
             OutlinedTextField(value = apellidos, onValueChange = { apellidos = it },
-                label = { Text("Apellidos") },
+                label = { Text(stringResource(R.string.register_surname)) },
                 leadingIcon = { Icon(Icons.Default.Person, null) },
                 singleLine = true, modifier = Modifier.fillMaxWidth())
 
             Spacer(Modifier.height(10.dp))
 
             OutlinedTextField(value = email, onValueChange = { email = it },
-                label = { Text("Correo electrónico") },
+                label = { Text(stringResource(R.string.login_email)) },
                 leadingIcon = { Icon(Icons.Default.Email, null) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 singleLine = true, modifier = Modifier.fillMaxWidth())
@@ -94,7 +96,7 @@ fun RegisterScreen(
             Spacer(Modifier.height(10.dp))
 
             OutlinedTextField(value = password, onValueChange = { password = it },
-                label = { Text("Contraseña") },
+                label = { Text(stringResource(R.string.login_password)) },
                 leadingIcon = { Icon(Icons.Default.Lock, null) },
                 trailingIcon = {
                     IconButton(onClick = { showPass = !showPass }) {
@@ -111,7 +113,7 @@ fun RegisterScreen(
 
             OutlinedTextField(value = confirmPassword,
                 onValueChange = { confirmPassword = it },
-                label = { Text("Confirmar contraseña") },
+                label = { Text(stringResource(R.string.register_confirm_password)) },
                 leadingIcon = { Icon(Icons.Default.Lock, null) },
                 trailingIcon = {
                     IconButton(onClick = { showConfirm = !showConfirm }) {
@@ -126,7 +128,7 @@ fun RegisterScreen(
                 isError = confirmPassword.isNotEmpty() && password != confirmPassword)
 
             if (confirmPassword.isNotEmpty() && password != confirmPassword) {
-                Text("Las contraseñas no coinciden",
+                Text(stringResource(R.string.register_passwords_mismatch),
                     color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
             }
 
@@ -149,16 +151,16 @@ fun RegisterScreen(
                     CircularProgressIndicator(modifier = Modifier.size(22.dp),
                         color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
                 } else {
-                    Text("Crear cuenta", fontSize = 16.sp)
+                    Text(stringResource(R.string.register_button), fontSize = 16.sp)
                 }
             }
 
             Spacer(Modifier.height(16.dp))
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("¿Ya tienes cuenta?",
+                Text(stringResource(R.string.register_has_account),
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
-                TextButton(onClick = onNavigateToLogin) { Text("Inicia sesión") }
+                TextButton(onClick = onNavigateToLogin) { Text(stringResource(R.string.register_login_link)) }
             }
         }
     }

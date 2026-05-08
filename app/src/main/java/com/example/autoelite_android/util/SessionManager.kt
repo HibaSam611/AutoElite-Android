@@ -17,7 +17,7 @@ object SessionManager {
     private lateinit var dataStore: DataStore<Preferences>
     private val scope = CoroutineScope(Dispatchers.IO)
 
-    // ── Keys de sesión ──
+    // Keys de sesión
     private val KEY_CLIENTE_ID = longPreferencesKey("cliente_id")
     private val KEY_USUARIO_ID = longPreferencesKey("usuario_id")
     private val KEY_NOMBRE     = stringPreferencesKey("nombre")
@@ -26,15 +26,18 @@ object SessionManager {
     private val KEY_TELEFONO   = stringPreferencesKey("telefono")
     private val KEY_PUNTOS     = intPreferencesKey("puntos")
 
-    // ── Keys de notificaciones ──
+    // Keys de notificaciones
     private val KEY_NOTIF_CITAS        = booleanPreferencesKey("notif_citas")
     private val KEY_NOTIF_REPARACIONES = booleanPreferencesKey("notif_reparaciones")
     private val KEY_NOTIF_PROMOCIONES  = booleanPreferencesKey("notif_promociones")
 
-    // ── Key de tema ──
+    // Key de tema
     private val KEY_DARK_MODE = booleanPreferencesKey("dark_mode")
 
-    // ── Cached values ──
+    // Key de idioma
+    private val KEY_LANGUAGE = stringPreferencesKey("language")
+
+    // Cached values
     var clienteId: Long = -1L
         set(value) { field = value; persist(KEY_CLIENTE_ID, value) }
 
@@ -68,6 +71,9 @@ object SessionManager {
     var isDarkMode: Boolean = false
         set(value) { field = value; persist(KEY_DARK_MODE, value) }
 
+    var language: String = "es"
+        set(value) { field = value; persist(KEY_LANGUAGE, value) }
+
     fun init(context: Context) {
         dataStore = context.dataStore
         runBlocking {
@@ -83,6 +89,7 @@ object SessionManager {
             notifReparaciones = prefs[KEY_NOTIF_REPARACIONES] ?: true
             notifPromociones  = prefs[KEY_NOTIF_PROMOCIONES]  ?: false
             isDarkMode        = prefs[KEY_DARK_MODE]          ?: false
+            language          = prefs[KEY_LANGUAGE]            ?: "es"
         }
     }
 
@@ -103,6 +110,7 @@ object SessionManager {
                 prefs.remove(KEY_EMAIL)
                 prefs.remove(KEY_TELEFONO)
                 prefs.remove(KEY_PUNTOS)
+                // No borramos idioma ni tema al cerrar sesión
             }
         }
     }

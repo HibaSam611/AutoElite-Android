@@ -16,11 +16,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.autoelite_android.R
 import com.example.autoelite_android.navigation.AutoEliteBottomBar
 import com.example.autoelite_android.navigation.Screen
 import com.example.autoelite_android.ui.citas.CitasViewModel
@@ -37,7 +39,7 @@ fun HomeScreen(
 ) {
     val user   = FirebaseAuth.getInstance().currentUser
     val nombre = user?.displayName?.split(" ")?.firstOrNull()
-        ?: SessionManager.nombre.ifBlank { "Cliente" }
+        ?: SessionManager.nombre.ifBlank { stringResource(R.string.home_client) }
 
     val citas by citasViewModel.citas.collectAsState()
     val proximaCita = citas.firstOrNull {
@@ -56,7 +58,7 @@ fun HomeScreen(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            "AutoElite",
+                            stringResource(R.string.app_name),
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -73,11 +75,11 @@ fun HomeScreen(
                                 }
                             }
                         ) {
-                            Icon(Icons.Outlined.Notifications, "Notificaciones")
+                            Icon(Icons.Outlined.Notifications, stringResource(R.string.home_notifications))
                         }
                     }
                     IconButton(onClick = { navController.navigate(Screen.Perfil.route) }) {
-                        Icon(Icons.Outlined.AccountCircle, "Perfil")
+                        Icon(Icons.Outlined.AccountCircle, stringResource(R.string.home_profile))
                     }
                 }
             )
@@ -90,7 +92,7 @@ fun HomeScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(paddingValues)
         ) {
-            // ── Header con saludo ──
+            // Header con saludo
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -107,19 +109,18 @@ fun HomeScreen(
             ) {
                 Column {
                     Text(
-                        "Hola, $nombre",
+                        stringResource(R.string.home_greeting, nombre),
                         fontSize = 28.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "Bienvenido a tu taller de confianza",
+                        stringResource(R.string.home_welcome),
                         fontSize = 14.sp,
                         color = Color.White.copy(alpha = 0.85f)
                     )
 
-                    // Próxima cita inline
                     if (proximaCita != null) {
                         Spacer(Modifier.height(16.dp))
                         Surface(
@@ -139,7 +140,7 @@ fun HomeScreen(
                                 Spacer(Modifier.width(12.dp))
                                 Column(Modifier.weight(1f)) {
                                     Text(
-                                        "Próxima cita",
+                                        stringResource(R.string.home_next_appointment),
                                         fontSize = 11.sp,
                                         color = Color.White.copy(alpha = 0.7f)
                                     )
@@ -150,7 +151,7 @@ fun HomeScreen(
                                         fontSize = 14.sp
                                     )
                                     Text(
-                                        proximaCita.tipo ?: "Servicio",
+                                        proximaCita.tipo ?: stringResource(R.string.home_service),
                                         fontSize = 12.sp,
                                         color = Color.White.copy(alpha = 0.8f)
                                     )
@@ -175,129 +176,83 @@ fun HomeScreen(
 
             Spacer(Modifier.height(20.dp))
 
-            // ── Acceso rápido ──
             Text(
-                "Acceso rápido",
+                stringResource(R.string.home_quick_access),
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 18.sp,
                 modifier = Modifier.padding(horizontal = 20.dp)
             )
             Spacer(Modifier.height(12.dp))
 
-            // Fila 1
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 QuickCard(
                     Modifier.weight(1f),
                     Icons.Outlined.CalendarMonth,
-                    "Pedir cita",
-                    "Agenda tu visita",
+                    stringResource(R.string.home_book_appointment),
+                    stringResource(R.string.home_book_subtitle),
                     MaterialTheme.colorScheme.primary
                 ) { navController.navigate(Screen.Citas.route) }
-
                 QuickCard(
                     Modifier.weight(1f),
                     Icons.Outlined.Build,
-                    "Reparaciones",
-                    "Seguimiento en vivo",
+                    stringResource(R.string.home_repairs),
+                    stringResource(R.string.home_repairs_subtitle),
                     MaterialTheme.colorScheme.tertiary
                 ) { navController.navigate(Screen.Reparaciones.route) }
             }
 
             Spacer(Modifier.height(12.dp))
 
-            // Fila 2
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 QuickCard(
                     Modifier.weight(1f),
                     Icons.Outlined.DirectionsCar,
-                    "Vehículos",
-                    "Gestiona tu flota",
+                    stringResource(R.string.home_vehicles),
+                    stringResource(R.string.home_vehicles_subtitle),
                     MaterialTheme.colorScheme.secondary
                 ) { navController.navigate(Screen.Vehiculos.route) }
-
                 QuickCard(
                     Modifier.weight(1f),
                     Icons.Outlined.Star,
-                    "Puntos CRM",
-                    "Canjea recompensas",
+                    stringResource(R.string.home_crm),
+                    stringResource(R.string.home_crm_subtitle),
                     MaterialTheme.colorScheme.tertiary
                 ) { navController.navigate(Screen.Crm.route) }
             }
 
             Spacer(Modifier.height(12.dp))
 
-            // Fila 3
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 QuickCard(
                     Modifier.weight(1f),
-                    Icons.Outlined.Receipt,
-                    "Facturas",
-                    "Paga online",
+                    Icons.Outlined.Receipt, stringResource(R.string.home_invoices),
+                    stringResource(R.string.home_invoices_subtitle),
                     MaterialTheme.colorScheme.error
                 ) { navController.navigate(Screen.Facturacion.route) }
-
                 QuickCard(
                     Modifier.weight(1f),
-                    Icons.Outlined.History,
-                    "Historial",
-                    "Tu actividad",
+                    Icons.Outlined.History, stringResource(R.string.home_history),
+                    stringResource(R.string.home_history_subtitle),
                     MaterialTheme.colorScheme.outline
                 ) { navController.navigate(Screen.Historial.route) }
             }
 
-            // Si no hay próxima cita, mostrar CTA
             if (proximaCita == null) {
                 Spacer(Modifier.height(20.dp))
                 Card(
                     onClick = { navController.navigate(Screen.Citas.route) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    ),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
                     shape = RoundedCornerShape(16.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(20.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Outlined.EventAvailable, null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(40.dp)
-                        )
+                    Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Outlined.EventAvailable, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(40.dp))
                         Spacer(Modifier.width(16.dp))
                         Column(Modifier.weight(1f)) {
-                            Text(
-                                "Sin citas programadas",
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            Text(
-                                "Pide tu próxima cita ahora",
-                                fontSize = 13.sp,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                            )
+                            Text(stringResource(R.string.home_no_appointments), fontWeight = FontWeight.SemiBold)
+                            Text(stringResource(R.string.home_book_now), fontSize = 13.sp, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f))
                         }
-                        Icon(
-                            Icons.Default.ArrowForward, null,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                        Icon(Icons.Default.ArrowForward, null, tint = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
@@ -322,31 +277,18 @@ private fun QuickCard(
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Surface(
                 modifier = Modifier.size(40.dp),
                 shape = RoundedCornerShape(12.dp),
                 color = accentColor.copy(alpha = 0.12f)
             ) {
-                Icon(
-                    icon, null,
-                    tint = accentColor,
-                    modifier = Modifier.padding(8.dp)
-                )
+                Icon(icon, null, tint = accentColor, modifier = Modifier.padding(8.dp))
             }
             Spacer(Modifier.height(12.dp))
-            Text(
-                title,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 14.sp
-            )
-            Text(
-                subtitle,
-                fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Text(title, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+            Text(subtitle, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
+
