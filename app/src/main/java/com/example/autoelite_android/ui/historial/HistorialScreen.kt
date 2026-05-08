@@ -13,11 +13,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.autoelite_android.R
 import com.example.autoelite_android.navigation.AutoEliteBottomBar
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -30,6 +33,8 @@ fun HistorialScreen(
     val loading by viewModel.loading.collectAsState()
     val error   by viewModel.error.collectAsState()
 
+    val context = LocalContext.current
+
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(error) {
         error?.let { snackbarHostState.showSnackbar(it); viewModel.resetError() }
@@ -38,15 +43,15 @@ fun HistorialScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Historial") },
+                title = { Text(stringResource(R.string.historial_title)) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, "Volver")
+                        Icon(Icons.Default.ArrowBack, stringResource(R.string.action_back))
                     }
                 },
                 actions = {
                     IconButton(onClick = { viewModel.cargarHistorial() }) {
-                        Icon(Icons.Default.Refresh, "Refrescar")
+                        Icon(Icons.Default.Refresh, stringResource(R.string.action_refresh))
                     }
                 }
             )
@@ -65,61 +70,39 @@ fun HistorialScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        Icons.Default.History, null,
+                    Icon(Icons.Default.History, null,
                         modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.outline
-                    )
+                        tint = MaterialTheme.colorScheme.outline)
                     Spacer(Modifier.height(12.dp))
-                    Text(
-                        "Aún no hay actividad",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        "Tus citas, reparaciones y pagos aparecerán aquí",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.outline
-                    )
+                    Text(stringResource(R.string.historial_empty),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.historial_empty_subtitle),
+                        fontSize = 12.sp, color = MaterialTheme.colorScheme.outline)
                 }
             }
 
             else -> {
-                // Agrupar eventos por mes/año para cabeceras
                 val eventosAgrupados = eventos.groupBy { evento ->
-                    extraerMesAnio(evento.fechaOrdenable)
+                    extraerMesAnio(evento.fechaOrdenable, context)
                 }
 
                 LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                        .padding(horizontal = 16.dp),
+                    modifier = Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = 16.dp),
                     contentPadding = PaddingValues(vertical = 16.dp)
                 ) {
-                    // Resumen rápido
                     item {
                         ResumenCard(eventos)
                         Spacer(Modifier.height(16.dp))
                     }
 
                     eventosAgrupados.forEach { (mesAnio, eventosDelMes) ->
-                        // Cabecera de mes
                         item {
-                            Text(
-                                mesAnio,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp,
+                            Text(mesAnio, fontWeight = FontWeight.Bold, fontSize = 14.sp,
                                 color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(vertical = 8.dp)
-                            )
+                                modifier = Modifier.padding(vertical = 8.dp))
                         }
-
                         itemsIndexed(eventosDelMes) { index, evento ->
-                            val esUltimo = index == eventosDelMes.lastIndex
-                            TimelineItem(
-                                evento = evento,
-                                showLine = !esUltimo
-                            )
+                            TimelineItem(evento = evento, showLine = index != eventosDelMes.lastIndex)
                         }
                     }
                 }
@@ -128,9 +111,6 @@ fun HistorialScreen(
     }
 }
 
-// ──────────────────────────────────────────────────────────────
-// Tarjeta de resumen
-// ──────────────────────────────────────────────────────────────
 @Composable
 private fun ResumenCard(eventos: List<TimelineEvent>) {
     val totalCitas = eventos.count { it.tipo == TipoEvento.CITA }
@@ -140,20 +120,17 @@ private fun ResumenCard(eventos: List<TimelineEvent>) {
     }
 
     Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        ),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            ResumenItem(Icons.Default.CalendarMonth, "$totalCitas", "Citas")
-            ResumenItem(Icons.Default.Build, "$totalReparaciones", "Reparaciones")
-            ResumenItem(Icons.Default.Receipt, "$totalFacturas", "Facturas")
+        Row(Modifier.fillMaxWidth().padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly) {
+            ResumenItem(Icons.Default.CalendarMonth, "$totalCitas",
+                stringResource(R.string.historial_appointments))
+            ResumenItem(Icons.Default.Build, "$totalReparaciones",
+                stringResource(R.string.historial_repairs))
+            ResumenItem(Icons.Default.Receipt, "$totalFacturas",
+                stringResource(R.string.historial_invoices))
         }
     }
 }
@@ -167,127 +144,62 @@ private fun ResumenItem(icon: ImageVector, valor: String, etiqueta: String) {
     }
 }
 
-// ──────────────────────────────────────────────────────────────
-// Elemento del timeline con línea vertical
-// ──────────────────────────────────────────────────────────────
 @Composable
 private fun TimelineItem(evento: TimelineEvent, showLine: Boolean) {
     val (icono, color) = eventoIconoYColor(evento.tipo)
     val lineColor = MaterialTheme.colorScheme.outlineVariant
 
     Row(modifier = Modifier.fillMaxWidth()) {
-        // ── Columna del indicador (punto + línea) ──
-        Box(
-            modifier = Modifier.width(40.dp),
-            contentAlignment = Alignment.TopCenter
-        ) {
-            // Línea vertical
+        Box(modifier = Modifier.width(40.dp), contentAlignment = Alignment.TopCenter) {
             if (showLine) {
-                Canvas(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .width(2.dp)
-                        .align(Alignment.TopCenter)
-                ) {
-                    drawLine(
-                        color = lineColor,
-                        start = Offset(size.width / 2, 20f),
-                        end = Offset(size.width / 2, size.height),
-                        strokeWidth = 2f
-                    )
+                Canvas(modifier = Modifier.fillMaxHeight().width(2.dp).align(Alignment.TopCenter)) {
+                    drawLine(color = lineColor, start = Offset(size.width / 2, 20f),
+                        end = Offset(size.width / 2, size.height), strokeWidth = 2f)
                 }
             }
-
-            // Icono circular
-            Surface(
-                modifier = Modifier.size(32.dp),
+            Surface(modifier = Modifier.size(32.dp),
                 shape = MaterialTheme.shapes.extraLarge,
-                color = color.copy(alpha = 0.15f)
-            ) {
-                Icon(
-                    icono, null,
-                    tint = color,
-                    modifier = Modifier.padding(6.dp)
-                )
+                color = color.copy(alpha = 0.15f)) {
+                Icon(icono, null, tint = color, modifier = Modifier.padding(6.dp))
             }
         }
 
         Spacer(Modifier.width(8.dp))
 
-        // ── Contenido del evento ──
-        Card(
-            modifier = Modifier
-                .weight(1f)
-                .padding(bottom = 12.dp)
-        ) {
+        Card(modifier = Modifier.weight(1f).padding(bottom = 12.dp)) {
             Column(modifier = Modifier.padding(12.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
+                Row(Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        evento.titulo,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 14.sp,
-                        modifier = Modifier.weight(1f)
-                    )
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Text(evento.titulo, fontWeight = FontWeight.SemiBold,
+                        fontSize = 14.sp, modifier = Modifier.weight(1f))
                     evento.importe?.let {
-                        Text(
-                            it,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        Text(it, fontWeight = FontWeight.Bold, fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.primary)
                     }
                 }
-
-                Text(
-                    evento.subtitulo,
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
+                Text(evento.subtitulo, fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(4.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
+                Row(Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        evento.fecha,
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.outline
-                    )
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Text(evento.fecha, fontSize = 11.sp, color = MaterialTheme.colorScheme.outline)
                     evento.estado?.let { estado ->
-                        SuggestionChip(
-                            onClick = {},
-                            label = {
-                                Text(
-                                    estadoLegible(estado),
-                                    fontSize = 10.sp
-                                )
-                            },
-                            modifier = Modifier.height(24.dp)
-                        )
+                        SuggestionChip(onClick = {},
+                            label = { Text(estadoLegible(estado), fontSize = 10.sp) },
+                            modifier = Modifier.height(24.dp))
                     }
                 }
-
                 evento.detalle?.let {
-                    Text(
-                        it,
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.outline,
-                        modifier = Modifier.padding(top = 2.dp)
-                    )
+                    Text(it, fontSize = 11.sp, color = MaterialTheme.colorScheme.outline,
+                        modifier = Modifier.padding(top = 2.dp))
                 }
             }
         }
     }
 }
 
-// Helpers
 @Composable
 private fun eventoIconoYColor(tipo: TipoEvento): Pair<ImageVector, Color> {
     return when (tipo) {
@@ -298,26 +210,26 @@ private fun eventoIconoYColor(tipo: TipoEvento): Pair<ImageVector, Color> {
     }
 }
 
+@Composable
 private fun estadoLegible(estado: String) = when (estado) {
-    "PENDIENTE"  -> "Pendiente"
-    "CONFIRMADA" -> "Confirmada"
-    "CANCELADA"  -> "Cancelada"
-    "EN_PROCESO" -> "En proceso"
-    "TERMINADA"  -> "Terminada"
+    "PENDIENTE"  -> stringResource(R.string.estado_pendiente)
+    "CONFIRMADA" -> stringResource(R.string.estado_confirmada)
+    "CANCELADA"  -> stringResource(R.string.estado_cancelada)
+    "EN_PROCESO" -> stringResource(R.string.estado_en_proceso)
+    "TERMINADA"  -> stringResource(R.string.estado_terminada)
     else -> estado.lowercase().replaceFirstChar { it.uppercase() }
 }
 
-private fun extraerMesAnio(fechaOrdenable: String): String {
-    // fechaOrdenable tiene formato "yyyy-MM-dd"
-    if (fechaOrdenable.length < 7) return "Otros"
+private fun extraerMesAnio(fechaOrdenable: String, context: android.content.Context): String {
+    if (fechaOrdenable.length < 7) return context.getString(R.string.month_other)
     val partes = fechaOrdenable.split("-")
-    if (partes.size < 2) return "Otros"
-    val mes = when (partes[1]) {
-        "01" -> "Enero"; "02" -> "Febrero"; "03" -> "Marzo"
-        "04" -> "Abril"; "05" -> "Mayo"; "06" -> "Junio"
-        "07" -> "Julio"; "08" -> "Agosto"; "09" -> "Septiembre"
-        "10" -> "Octubre"; "11" -> "Noviembre"; "12" -> "Diciembre"
-        else -> partes[1]
+    if (partes.size < 2) return context.getString(R.string.month_other)
+    val mesResId = when (partes[1]) {
+        "01" -> R.string.month_01; "02" -> R.string.month_02; "03" -> R.string.month_03
+        "04" -> R.string.month_04; "05" -> R.string.month_05; "06" -> R.string.month_06
+        "07" -> R.string.month_07; "08" -> R.string.month_08; "09" -> R.string.month_09
+        "10" -> R.string.month_10; "11" -> R.string.month_11; "12" -> R.string.month_12
+        else -> R.string.month_other
     }
-    return "$mes ${partes[0]}"
+    return "${context.getString(mesResId)} ${partes[0]}"
 }

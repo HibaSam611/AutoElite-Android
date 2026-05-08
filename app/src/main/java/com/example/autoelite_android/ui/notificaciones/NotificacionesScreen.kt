@@ -11,12 +11,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.autoelite_android.R
 import com.example.autoelite_android.navigation.AutoEliteBottomBar
 import com.example.autoelite_android.navigation.Screen
 
@@ -36,7 +38,6 @@ fun NotificacionesScreen(
         error?.let { snackbarHostState.showSnackbar(it); viewModel.resetError() }
     }
 
-    // Al entrar en la pantalla, refrescar
     LaunchedEffect(Unit) {
         viewModel.cargarNotificaciones()
         viewModel.cargarContadorNoLeidas()
@@ -45,16 +46,16 @@ fun NotificacionesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Notificaciones") },
+                title = { Text(stringResource(R.string.notif_title)) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, "Volver")
+                        Icon(Icons.Default.ArrowBack, stringResource(R.string.action_back))
                     }
                 },
                 actions = {
                     if (noLeidas > 0) {
                         TextButton(onClick = { viewModel.marcarTodasLeidas() }) {
-                            Text("Marcar todas leídas")
+                            Text(stringResource(R.string.notif_mark_all_read))
                         }
                     }
                 }
@@ -74,40 +75,27 @@ fun NotificacionesScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        Icons.Default.NotificationsNone, null,
+                    Icon(Icons.Default.NotificationsNone, null,
                         modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.outline
-                    )
+                        tint = MaterialTheme.colorScheme.outline)
                     Spacer(Modifier.height(12.dp))
-                    Text(
-                        "No tienes notificaciones",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        "Aquí aparecerán las actualizaciones de tus citas,\nreparaciones y facturas",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.outline,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
+                    Text(stringResource(R.string.notif_empty),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.notif_empty_subtitle),
+                        fontSize = 12.sp, color = MaterialTheme.colorScheme.outline,
+                        modifier = Modifier.padding(top = 4.dp))
                 }
             }
 
             else -> LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
+                modifier = Modifier.fillMaxSize().padding(paddingValues),
                 contentPadding = PaddingValues(vertical = 8.dp)
             ) {
                 items(notificaciones) { notif ->
-                    NotificacionItem(
+                    NotificacionItemRow(
                         notificacion = notif,
                         onClick = {
-                            // Marcar como leída
-                            if (!notif.leida) {
-                                viewModel.marcarLeida(notif.id)
-                            }
-                            // Navegar a la pantalla correspondiente
+                            if (!notif.leida) viewModel.marcarLeida(notif.id)
                             val ruta = when (notif.pantalla) {
                                 "citas"        -> Screen.Citas.route
                                 "reparaciones" -> Screen.Reparaciones.route
@@ -129,7 +117,7 @@ fun NotificacionesScreen(
 }
 
 @Composable
-private fun NotificacionItem(
+private fun NotificacionItemRow(
     notificacion: NotificacionItem,
     onClick: () -> Unit
 ) {
@@ -159,70 +147,41 @@ private fun NotificacionItem(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.Top
     ) {
-        // Punto azul de no leída
         if (!notificacion.leida) {
-            Box(
-                modifier = Modifier
-                    .padding(top = 6.dp, end = 8.dp)
-                    .size(8.dp)
-                    .background(
-                        MaterialTheme.colorScheme.primary,
-                        shape = MaterialTheme.shapes.extraLarge
-                    )
-            )
+            Box(modifier = Modifier
+                .padding(top = 6.dp, end = 8.dp)
+                .size(8.dp)
+                .background(MaterialTheme.colorScheme.primary,
+                    shape = MaterialTheme.shapes.extraLarge))
         } else {
             Spacer(Modifier.width(16.dp))
         }
 
-        // Icono
-        Surface(
-            modifier = Modifier.size(40.dp),
+        Surface(modifier = Modifier.size(40.dp),
             shape = MaterialTheme.shapes.medium,
-            color = iconColor.copy(alpha = 0.1f)
-        ) {
-            Icon(
-                icono, null,
-                tint = iconColor,
-                modifier = Modifier.padding(8.dp)
-            )
+            color = iconColor.copy(alpha = 0.1f)) {
+            Icon(icono, null, tint = iconColor, modifier = Modifier.padding(8.dp))
         }
 
         Spacer(Modifier.width(12.dp))
 
-        // Contenido
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                notificacion.titulo,
+            Text(notificacion.titulo,
                 fontWeight = if (!notificacion.leida) FontWeight.Bold else FontWeight.Medium,
-                fontSize = 14.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+                fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Spacer(Modifier.height(2.dp))
-            Text(
-                notificacion.cuerpo,
-                fontSize = 13.sp,
+            Text(notificacion.cuerpo, fontSize = 13.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
+                maxLines = 2, overflow = TextOverflow.Ellipsis)
             Spacer(Modifier.height(4.dp))
-            Text(
-                notificacion.fecha,
-                fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.outline
-            )
+            Text(notificacion.fecha, fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.outline)
         }
 
-        // Flecha de navegación
         if (notificacion.pantalla.isNotBlank()) {
-            Icon(
-                Icons.Default.ChevronRight, null,
+            Icon(Icons.Default.ChevronRight, null,
                 tint = MaterialTheme.colorScheme.outline,
-                modifier = Modifier
-                    .align(Alignment.CenterVertically)
-                    .size(20.dp)
-            )
+                modifier = Modifier.align(Alignment.CenterVertically).size(20.dp))
         }
     }
 

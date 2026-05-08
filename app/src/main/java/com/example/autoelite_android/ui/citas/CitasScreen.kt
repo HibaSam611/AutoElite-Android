@@ -15,12 +15,14 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.autoelite_android.R
 import com.example.autoelite_android.model.CitaResponse
 import com.example.autoelite_android.model.VehiculoResponse
 import com.example.autoelite_android.navigation.AutoEliteBottomBar
@@ -30,10 +32,12 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 private val estadosCita = listOf("PENDIENTE", "CONFIRMADA", "CANCELADA")
+
+@Composable
 private fun estadoLabel(estado: String) = when (estado) {
-    "PENDIENTE"  -> "Pendientes"
-    "CONFIRMADA" -> "Confirmadas"
-    "CANCELADA"  -> "Canceladas"
+    "PENDIENTE"  -> stringResource(R.string.citas_filter_pending)
+    "CONFIRMADA" -> stringResource(R.string.citas_filter_confirmed)
+    "CANCELADA"  -> stringResource(R.string.citas_filter_cancelled)
     else -> estado
 }
 
@@ -66,12 +70,12 @@ fun CitasScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Mis citas") },
+                title = { Text(stringResource(R.string.citas_title)) },
                 actions = {
                     IconButton(onClick = { showSearch = !showSearch }) {
                         Icon(
                             if (showSearch) Icons.Default.SearchOff else Icons.Default.Search,
-                            contentDescription = "Buscar"
+                            contentDescription = stringResource(R.string.action_search)
                         )
                     }
                 }
@@ -83,7 +87,7 @@ fun CitasScreen(
             ExtendedFloatingActionButton(
                 onClick = { showDialog = true },
                 icon = { Icon(Icons.Default.Add, null) },
-                text = { Text("Nueva cita") }
+                text = { Text(stringResource(R.string.citas_new)) }
             )
         }
     ) { paddingValues ->
@@ -92,17 +96,16 @@ fun CitasScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Barra de búsqueda
             AnimatedVisibility(visible = showSearch) {
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { viewModel.setSearch(it) },
-                    placeholder = { Text("Buscar por vehículo, tipo, fecha…") },
+                    placeholder = { Text(stringResource(R.string.citas_search_hint)) },
                     leadingIcon = { Icon(Icons.Default.Search, null) },
                     trailingIcon = {
                         if (searchQuery.isNotBlank()) {
                             IconButton(onClick = { viewModel.setSearch("") }) {
-                                Icon(Icons.Default.Clear, "Limpiar")
+                                Icon(Icons.Default.Clear, stringResource(R.string.action_clear))
                             }
                         }
                     },
@@ -113,7 +116,6 @@ fun CitasScreen(
                 )
             }
 
-            // Chips de filtro por estado
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -123,7 +125,7 @@ fun CitasScreen(
                     FilterChip(
                         selected = estadoFilter == null,
                         onClick = { viewModel.setEstadoFilter(null) },
-                        label = { Text("Todas") },
+                        label = { Text(stringResource(R.string.action_all)) },
                         leadingIcon = if (estadoFilter == null) {{
                             Icon(Icons.Default.Done, null, Modifier.size(16.dp))
                         }} else null
@@ -145,7 +147,6 @@ fun CitasScreen(
                 }
             }
 
-            // Contenido
             when {
                 loading -> {
                     ShimmerList(count = 5) {
@@ -166,13 +167,13 @@ fun CitasScreen(
                             Spacer(Modifier.height(12.dp))
                             Text(
                                 if (searchQuery.isNotBlank() || estadoFilter != null)
-                                    "No se encontraron citas con esos filtros"
-                                else "No tienes citas aún",
+                                    stringResource(R.string.citas_empty_filtered)
+                                else stringResource(R.string.citas_empty),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             if (searchQuery.isBlank() && estadoFilter == null) {
                                 TextButton(onClick = { showDialog = true }) {
-                                    Text("Pedir una cita")
+                                    Text(stringResource(R.string.citas_book_one))
                                 }
                             }
                         }
@@ -180,7 +181,8 @@ fun CitasScreen(
                 }
                 else -> {
                     Text(
-                        "${citas.size} cita${if (citas.size != 1) "s" else ""}",
+                        if (citas.size == 1) stringResource(R.string.citas_count_one, citas.size)
+                        else stringResource(R.string.citas_count_many, citas.size),
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
@@ -211,7 +213,6 @@ fun CitasScreen(
         }
     }
 
-    // Diálogo de confirmación para cancelar cita
     citaACancelar?.let { cita ->
         AlertDialog(
             onDismissRequest = { citaACancelar = null },
@@ -222,9 +223,9 @@ fun CitasScreen(
                     modifier = Modifier.size(32.dp)
                 )
             },
-            title = { Text("Cancelar cita") },
+            title = { Text(stringResource(R.string.citas_cancel_title)) },
             text = {
-                Text("¿Estás seguro de que quieres cancelar la cita del ${cita.fecha} a las ${cita.hora}?")
+                Text(stringResource(R.string.citas_cancel_confirm, cita.fecha, cita.hora))
             },
             confirmButton = {
                 Button(
@@ -235,11 +236,11 @@ fun CitasScreen(
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.error
                     )
-                ) { Text("Cancelar cita") }
+                ) { Text(stringResource(R.string.citas_cancel_button)) }
             },
             dismissButton = {
                 TextButton(onClick = { citaACancelar = null }) {
-                    Text("Volver")
+                    Text(stringResource(R.string.action_back))
                 }
             }
         )
@@ -284,7 +285,7 @@ private fun CitaCard(cita: CitaResponse, onCancelar: () -> Unit) {
             )
             Spacer(Modifier.width(8.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(cita.tipo ?: "Servicio", fontWeight = FontWeight.SemiBold)
+                Text(cita.tipo ?: stringResource(R.string.home_service), fontWeight = FontWeight.SemiBold)
                 Text("${cita.hora} h", fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(4.dp))
@@ -293,7 +294,7 @@ private fun CitaCard(cita: CitaResponse, onCancelar: () -> Unit) {
             }
             if (cita.estado != "CANCELADA") {
                 IconButton(onClick = onCancelar) {
-                    Icon(Icons.Default.Cancel, "Cancelar",
+                    Icon(Icons.Default.Cancel, stringResource(R.string.action_cancel),
                         tint = MaterialTheme.colorScheme.error)
                 }
             }
@@ -339,7 +340,7 @@ private fun NuevaCitaDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Nueva cita") },
+        title = { Text(stringResource(R.string.citas_new)) },
         text = {
             Column(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
@@ -352,14 +353,14 @@ private fun NuevaCitaDialog(
                             "${it.marca} ${it.modelo} · ${it.matricula}" } ?: "",
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Vehículo") },
+                        label = { Text(stringResource(R.string.citas_vehicle)) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = vehiculoExpanded) },
                         modifier = Modifier.fillMaxWidth().menuAnchor()
                     )
                     ExposedDropdownMenu(expanded = vehiculoExpanded,
                         onDismissRequest = { vehiculoExpanded = false }) {
                         if (vehiculos.isEmpty()) {
-                            DropdownMenuItem(text = { Text("No tienes vehículos registrados") },
+                            DropdownMenuItem(text = { Text(stringResource(R.string.citas_no_vehicles)) },
                                 onClick = { vehiculoExpanded = false })
                         } else {
                             vehiculos.forEach { v ->
@@ -373,7 +374,7 @@ private fun NuevaCitaDialog(
 
                 OutlinedTextField(
                     value = fechaFormateada, onValueChange = {}, readOnly = true,
-                    label = { Text("Fecha") },
+                    label = { Text(stringResource(R.string.citas_date)) },
                     leadingIcon = { Icon(Icons.Default.CalendarMonth, null) },
                     modifier = Modifier.fillMaxWidth(),
                     interactionSource = remember {
@@ -389,7 +390,7 @@ private fun NuevaCitaDialog(
                 )
 
                 if (fechaIso != null) {
-                    Text("Horarios disponibles:",
+                    Text(stringResource(R.string.citas_available_times),
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 14.sp
                     )
@@ -397,8 +398,7 @@ private fun NuevaCitaDialog(
                         Box(
                             Modifier.fillMaxWidth().height(100.dp),
                             contentAlignment = Alignment.Center
-                        )
-                        {
+                        ) {
                             CircularProgressIndicator(modifier = Modifier.size(28.dp))
                         }
                     } else if (horasDisponibles.isEmpty()) {
@@ -408,13 +408,12 @@ private fun NuevaCitaDialog(
                         ) {
                             Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
-                                    Icons.Default.EventBusy,
-                                    null,
+                                    Icons.Default.EventBusy, null,
                                     tint = MaterialTheme.colorScheme.error,
                                     modifier = Modifier.size(24.dp)
                                 )
                                 Spacer(Modifier.width(8.dp))
-                                Text("No hay horas disponibles para este día.", fontSize = 13.sp,
+                                Text(stringResource(R.string.citas_no_times), fontSize = 13.sp,
                                     color = MaterialTheme.colorScheme.onErrorContainer)
                             }
                         }
@@ -452,17 +451,17 @@ private fun NuevaCitaDialog(
                             LeyendaItem(
                                 MaterialTheme.colorScheme.surface,
                                 MaterialTheme.colorScheme.outline,
-                                "Disponible"
+                                stringResource(R.string.citas_slot_available)
                             )
                             LeyendaItem(
                                 MaterialTheme.colorScheme.primary,
                                 MaterialTheme.colorScheme.primary,
-                                "Seleccionada"
+                                stringResource(R.string.citas_slot_selected)
                             )
                             LeyendaItem(
                                 MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                                 MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                                "Ocupada"
+                                stringResource(R.string.citas_slot_occupied)
                             )
                         }
                     }
@@ -470,16 +469,12 @@ private fun NuevaCitaDialog(
                     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Row(Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically)
-                        {
-                            Icon(Icons.Default.Info,
-                                null,
+                        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Info, null,
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(20.dp)
-                            )
+                                modifier = Modifier.size(20.dp))
                             Spacer(Modifier.width(8.dp))
-                            Text("Selecciona una fecha para ver los horarios disponibles",
+                            Text(stringResource(R.string.citas_select_date),
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
@@ -489,11 +484,11 @@ private fun NuevaCitaDialog(
                 OutlinedTextField(
                     value = descripcion,
                     onValueChange = { descripcion = it },
-                    label = { Text("Tipo de servicio") },
+                    label = { Text(stringResource(R.string.citas_service_type)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
-                Text("El taller confirmará la disponibilidad",
+                Text(stringResource(R.string.citas_workshop_confirm),
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
@@ -506,29 +501,25 @@ private fun NuevaCitaDialog(
                 onConfirmar(v.id, "${fecha}T${hora}:00", descripcion)
             }, enabled = vehiculoSeleccionado != null && fechaIso != null
                     && horaSeleccionada != null && descripcion.isNotBlank()
-            ) { Text("Solicitar") }
+            ) { Text(stringResource(R.string.citas_request)) }
         },
         dismissButton = {
             TextButton(onClick = onDismiss)
-            { Text("Cancelar") }
+            { Text(stringResource(R.string.action_cancel)) }
         }
     )
 
     if (mostrarDatePicker) {
         DatePickerDialog(onDismissRequest = { mostrarDatePicker = false },
             confirmButton = {
-                TextButton(
-                    onClick = { mostrarDatePicker = false }
-                )
-                {
-                    Text("Aceptar")
+                TextButton(onClick = { mostrarDatePicker = false }) {
+                    Text(stringResource(R.string.action_accept))
                 }
             },
             dismissButton = {
-                TextButton(
-                    onClick = { mostrarDatePicker = false }
-                )
-                { Text("Cancelar") }
+                TextButton(onClick = { mostrarDatePicker = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
             }
         ) { DatePicker(state = datePickerState) }
     }
@@ -543,10 +534,7 @@ private fun LeyendaItem(
     Row(verticalAlignment = Alignment.CenterVertically) {
         Surface(modifier = Modifier.size(12.dp),
             shape = MaterialTheme.shapes.extraSmall,
-            color = color, border = BorderStroke(1.dp, borderColor))
-        {
-
-        }
+            color = color, border = BorderStroke(1.dp, borderColor)) {}
         Spacer(Modifier.width(4.dp))
         Text(texto, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }

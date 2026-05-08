@@ -13,26 +13,41 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.autoelite_android.R
 import com.example.autoelite_android.model.ReparacionResponse
 import com.example.autoelite_android.navigation.AutoEliteBottomBar
 import com.example.autoelite_android.ui.components.ReparacionCardSkeleton
 import com.example.autoelite_android.ui.components.ShimmerList
 
-private val estadosPasos = listOf("Presentada", "En proceso", "Terminada", "Confirmada")
 private fun estadoIndex(estado: String) = when (estado) {
     "PRESENTADA" -> 0; "EN_PROCESO" -> 1; "TERMINADA" -> 2
     "CONFIRMADA" -> 3; "RECHAZADA" -> -1; else -> 0
 }
 private val estadosReparacion = listOf("PRESENTADA","EN_PROCESO","TERMINADA","CONFIRMADA","RECHAZADA")
+
+@Composable
 private fun estadoRepLabel(estado: String) = when (estado) {
-    "PRESENTADA" -> "Presentadas"; "EN_PROCESO" -> "En proceso"
-    "TERMINADA" -> "Terminadas"; "CONFIRMADA" -> "Confirmadas"
-    "RECHAZADA" -> "Rechazadas"; else -> estado
+    "PRESENTADA" -> stringResource(R.string.reparaciones_filter_submitted)
+    "EN_PROCESO" -> stringResource(R.string.reparaciones_filter_in_progress)
+    "TERMINADA"  -> stringResource(R.string.reparaciones_filter_finished)
+    "CONFIRMADA" -> stringResource(R.string.reparaciones_filter_confirmed)
+    "RECHAZADA"  -> stringResource(R.string.reparaciones_filter_rejected)
+    else -> estado
+}
+
+@Composable
+private fun estadoPasoLabel(index: Int) = when (index) {
+    0 -> stringResource(R.string.reparaciones_step_submitted)
+    1 -> stringResource(R.string.reparaciones_step_in_progress)
+    2 -> stringResource(R.string.reparaciones_step_finished)
+    3 -> stringResource(R.string.reparaciones_step_confirmed)
+    else -> ""
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -61,9 +76,10 @@ fun ReparacionesScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Mis reparaciones") }, actions = {
+            TopAppBar(title = { Text(stringResource(R.string.reparaciones_title)) }, actions = {
                 IconButton(onClick = { showSearch = !showSearch }) {
-                    Icon(if (showSearch) Icons.Default.SearchOff else Icons.Default.Search, "Buscar")
+                    Icon(if (showSearch) Icons.Default.SearchOff else Icons.Default.Search,
+                        stringResource(R.string.action_search))
                 }
             })
         },
@@ -74,11 +90,11 @@ fun ReparacionesScreen(
             AnimatedVisibility(visible = showSearch) {
                 OutlinedTextField(
                     value = searchQuery, onValueChange = { viewModel.setSearch(it) },
-                    placeholder = { Text("Buscar por vehículo, matrícula, mecánico…") },
+                    placeholder = { Text(stringResource(R.string.reparaciones_search_hint)) },
                     leadingIcon = { Icon(Icons.Default.Search, null) },
                     trailingIcon = {
                         if (searchQuery.isNotBlank()) IconButton(onClick = { viewModel.setSearch("") }) {
-                            Icon(Icons.Default.Clear, "Limpiar")
+                            Icon(Icons.Default.Clear, stringResource(R.string.action_clear))
                         }
                     },
                     singleLine = true,
@@ -93,34 +109,21 @@ fun ReparacionesScreen(
                     FilterChip(
                         selected = estadoFilter == null,
                         onClick = { viewModel.setEstadoFilter(null) },
-                        label = { Text("Todas") },
+                        label = { Text(stringResource(R.string.action_all)) },
                         leadingIcon = if (estadoFilter == null) {
-                            { Icon(
-                                Icons.Default.Done,
-                                null,
-                                Modifier.size(16.dp))
-                            }
-                        }
-                        else null
+                            { Icon(Icons.Default.Done, null, Modifier.size(16.dp)) }
+                        } else null
                     )
                 }
                 items(estadosReparacion) { estado ->
                     FilterChip(selected = estadoFilter == estado,
                         onClick = {
-                            viewModel.setEstadoFilter(
-                                if (estadoFilter == estado) null
-                                else estado
-                            )
+                            viewModel.setEstadoFilter(if (estadoFilter == estado) null else estado)
                         },
                         label = { Text(estadoRepLabel(estado)) },
                         leadingIcon = if (estadoFilter == estado) {
-                            { Icon(
-                                Icons.Default.Done,
-                                null,
-                                Modifier.size(16.dp))
-                            }
-                        }
-                        else null
+                            { Icon(Icons.Default.Done, null, Modifier.size(16.dp)) }
+                        } else null
                     )
                 }
             }
@@ -134,20 +137,22 @@ fun ReparacionesScreen(
 
                 reparaciones.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            Icons.Default.Build,
-                            null,
+                        Icon(Icons.Default.Build, null,
                             modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.outline
-                        )
+                            tint = MaterialTheme.colorScheme.outline)
                         Spacer(Modifier.height(12.dp))
-                        Text(if (searchQuery.isNotBlank() || estadoFilter != null) "No se encontraron reparaciones"
-                        else "Sin reparaciones activas", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            if (searchQuery.isNotBlank() || estadoFilter != null)
+                                stringResource(R.string.reparaciones_empty_filtered)
+                            else stringResource(R.string.reparaciones_empty),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
 
                 else -> {
-                    Text("${reparaciones.size} reparación${if (reparaciones.size != 1) "es" else ""}",
+                    Text(
+                        if (reparaciones.size == 1) stringResource(R.string.reparaciones_count_one, reparaciones.size)
+                        else stringResource(R.string.reparaciones_count_many, reparaciones.size),
                         fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
 
@@ -173,8 +178,8 @@ fun ReparacionesScreen(
         ValoracionDialog(
             vehiculo = "${rep.vehiculo} · ${rep.matricula}",
             onDismiss = { reparacionAValorar = null },
-            onEnviar = {
-                p, c -> viewModel.enviarValoracion(rep.id, p, c);
+            onEnviar = { p, c ->
+                viewModel.enviarValoracion(rep.id, p, c)
                 reparacionAValorar = null
             }
         )
@@ -183,35 +188,23 @@ fun ReparacionesScreen(
     reparacionAAceptar?.let { rep ->
         AlertDialog(onDismissRequest = { reparacionAAceptar = null },
             icon = {
-                Icon(
-                    Icons.Default.Check,
-                    null,
+                Icon(Icons.Default.Check, null,
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(32.dp)
-                )
+                    modifier = Modifier.size(32.dp))
             },
-            title = { Text("Aceptar reparación") },
-            text = { Text("¿Aceptas la reparación de ${rep.vehiculo} " +
-                    "· ${rep.matricula} por ${rep.costeTotal} €?\n\nEl taller comenzará a trabajar en tu vehículo.")
-                   },
+            title = { Text(stringResource(R.string.reparaciones_accept_title)) },
+            text = {
+                Text(stringResource(R.string.reparaciones_accept_confirm,
+                    rep.vehiculo, rep.matricula, rep.costeTotal))
+            },
             confirmButton = {
-                Button(
-                    onClick = {
-                        viewModel.aceptarReparacion(rep.id); reparacionAAceptar = null
-                    }
-                )
-                {
-                    Text("Aceptar")
-                }
+                Button(onClick = {
+                    viewModel.aceptarReparacion(rep.id); reparacionAAceptar = null
+                }) { Text(stringResource(R.string.action_accept)) }
             },
             dismissButton = {
-                TextButton(
-                    onClick = {
-                        reparacionAAceptar = null
-                    }
-                )
-                {
-                    Text("Volver")
+                TextButton(onClick = { reparacionAAceptar = null }) {
+                    Text(stringResource(R.string.action_back))
                 }
             }
         )
@@ -219,39 +212,29 @@ fun ReparacionesScreen(
 
     reparacionARechazar?.let { rep ->
         AlertDialog(
-            onDismissRequest = {
-                reparacionARechazar = null
-            },
+            onDismissRequest = { reparacionARechazar = null },
             icon = {
-                Icon(
-                    Icons.Default.Close,
-                    null,
+                Icon(Icons.Default.Close, null,
                     tint = MaterialTheme.colorScheme.error,
                     modifier = Modifier.size(32.dp))
             },
-            title = {
-                Text("Rechazar reparación")
-                    },
+            title = { Text(stringResource(R.string.reparaciones_reject_title)) },
             text = {
-                Text("¿Estás seguro de que quieres rechazar la reparación de ${rep.vehiculo} " +
-                        "· ${rep.matricula}?\n\nEsta acción no se puede deshacer.")
-                   },
+                Text(stringResource(R.string.reparaciones_reject_confirm,
+                    rep.vehiculo, rep.matricula))
+            },
             confirmButton = {
                 Button(
                     onClick = {
-                        viewModel.rechazarReparacion(rep.id);
+                        viewModel.rechazarReparacion(rep.id)
                         reparacionARechazar = null
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error))
-                {
-                    Text("Rechazar")
-                }
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) { Text(stringResource(R.string.action_reject)) }
             },
             dismissButton = {
-                TextButton(
-                    onClick = { reparacionARechazar = null }
-                ) {
-                    Text("Volver")
+                TextButton(onClick = { reparacionARechazar = null }) {
+                    Text(stringResource(R.string.action_back))
                 }
             }
         )
@@ -265,8 +248,7 @@ private fun ReparacionCard(
     onValorar: () -> Unit,
     onAceptar: () -> Unit,
     onRechazar: () -> Unit
-)
-{
+) {
     val puedeValorar = (rep.estado == "TERMINADA" || rep.estado == "CONFIRMADA") && !yaValorada
     val esPresentada = rep.estado == "PRESENTADA"
     val esRechazada = rep.estado == "RECHAZADA"
@@ -274,84 +256,62 @@ private fun ReparacionCard(
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Default.DirectionsCar,
-                    null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
+                Icon(Icons.Default.DirectionsCar, null,
+                    tint = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.width(8.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("${rep.vehiculo} · ${rep.matricula}",
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text("Mecánico: ${rep.mecanico}",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Text("${rep.vehiculo} · ${rep.matricula}", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.reparaciones_mechanic, rep.mecanico),
+                        fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Text(rep.fechaInicio, fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.outline
-                )
+                Text(rep.fechaInicio, fontSize = 11.sp, color = MaterialTheme.colorScheme.outline)
             }
             Spacer(Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Default.Euro,
-                    null,
+                Icon(Icons.Default.Euro, null,
                     modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.width(4.dp))
-                Text("Coste: ${rep.costeTotal} €",
-                    fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Text(stringResource(R.string.reparaciones_cost, rep.costeTotal),
+                    fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
 
             if (esRechazada) {
                 Spacer(Modifier.height(12.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.Cancel,
-                        null,
+                    Icon(Icons.Default.Cancel, null,
                         tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(20.dp)
-                    )
+                        modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text("Reparación rechazada",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.error
-                    )
+                    Text(stringResource(R.string.reparaciones_rejected),
+                        fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.error)
                 }
             } else {
                 Spacer(Modifier.height(16.dp))
-                Text("Estado del vehículo",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Text(stringResource(R.string.reparaciones_vehicle_status),
+                    fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(8.dp))
                 val pasoActual = estadoIndex(rep.estado)
                 Row(Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    estadosPasos.forEachIndexed { index, paso ->
+                    for (index in 0..3) {
+                        val paso = estadoPasoLabel(index)
                         val activo = index <= pasoActual
                         Column(horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.weight(1f)
-                        ) {
+                            modifier = Modifier.weight(1f)) {
                             Icon(
                                 if (activo) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
                                 paso,
                                 tint = if (activo) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
                                 modifier = Modifier.size(22.dp))
-                            Text(paso,
-                                fontSize = 9.sp,
+                            Text(paso, fontSize = 9.sp,
                                 color = if (activo) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline)
                         }
-                        if (index < estadosPasos.lastIndex) HorizontalDivider(modifier = Modifier.weight(0.5f),
+                        if (index < 3) HorizontalDivider(modifier = Modifier.weight(0.5f),
                             color = if (index < pasoActual) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant)
                     }
                 }
@@ -359,28 +319,20 @@ private fun ReparacionCard(
 
             if (esPresentada) {
                 Spacer(Modifier.height(12.dp))
-                Text("El taller te ha presentado esta reparación. ¿Deseas aceptarla?", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.reparaciones_workshop_question),
+                    fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(8.dp))
-                Row(Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(onClick = onRechazar, modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)) {
-                        Icon(
-                            Icons.Default.Close,
-                            null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(Modifier.width(6.dp));
-                        Text("Rechazar")
+                        Icon(Icons.Default.Close, null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(stringResource(R.string.action_reject))
                     }
                     Button(onClick = onAceptar, modifier = Modifier.weight(1f)) {
-                        Icon(
-                            Icons.Default.Check,
-                            null,
-                            modifier = Modifier.size(18.dp)
-                        )
+                        Icon(Icons.Default.Check, null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(6.dp))
-                        Text("Aceptar")
+                        Text(stringResource(R.string.action_accept))
                     }
                 }
             }
@@ -388,28 +340,20 @@ private fun ReparacionCard(
             if (puedeValorar) {
                 Spacer(Modifier.height(12.dp))
                 OutlinedButton(onClick = onValorar, modifier = Modifier.fillMaxWidth()) {
-                    Icon(
-                        Icons.Default.Star,
-                        null
-                    )
+                    Icon(Icons.Default.Star, null)
                     Spacer(Modifier.width(8.dp))
-                    Text("Valorar reparación")
+                    Text(stringResource(R.string.reparaciones_rate))
                 }
             }
             if (yaValorada) {
                 Spacer(Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.CheckCircle,
-                        null,
+                    Icon(Icons.Default.CheckCircle, null,
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(16.dp)
-                    )
+                        modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text("Valoración enviada",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    Text(stringResource(R.string.reparaciones_rated),
+                        fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
                 }
             }
         }
@@ -420,68 +364,56 @@ private fun ReparacionCard(
 private fun ValoracionDialog(vehiculo: String, onDismiss: () -> Unit, onEnviar: (Short, String?) -> Unit) {
     var puntuacion by remember { mutableStateOf(0) }
     var comentario by remember { mutableStateOf("") }
-    AlertDialog(onDismissRequest = onDismiss, title = { Text("Valorar reparación") },
+
+    val ratingLabels = listOf(
+        stringResource(R.string.reparaciones_rate_1),
+        stringResource(R.string.reparaciones_rate_2),
+        stringResource(R.string.reparaciones_rate_3),
+        stringResource(R.string.reparaciones_rate_4),
+        stringResource(R.string.reparaciones_rate_5)
+    )
+
+    AlertDialog(onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.reparaciones_rate_title)) },
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
-            )
-            {
-                Text(
-                    vehiculo,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    "¿Cómo fue tu experiencia?",
-                    fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Row(
-                    horizontalArrangement = Arrangement.Center,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
+            ) {
+                Text(vehiculo, fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.reparaciones_rate_question),
+                    fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.fillMaxWidth()) {
                     for (i in 1..5) {
-                        IconButton(
-                            onClick = { puntuacion = i }
-                        ) {
+                        IconButton(onClick = { puntuacion = i }) {
                             Icon(if (i <= puntuacion) Icons.Default.Star else Icons.Outlined.StarOutline,
-                                "$i estrellas",
-                                tint = if (i <= puntuacion) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                                modifier = Modifier.size(36.dp)
-                            )
+                                stringResource(R.string.reparaciones_stars, i),
+                                tint = if (i <= puntuacion) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.size(36.dp))
                         }
                     }
                 }
-                if (puntuacion > 0) Text(when (puntuacion) { 1->"Muy malo"; 2->"Malo"; 3->"Normal"; 4->"Bueno"; 5->"Excelente"; else->"" },
+                if (puntuacion > 0) Text(ratingLabels[puntuacion - 1],
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.primary)
                 OutlinedTextField(
                     value = comentario,
                     onValueChange = { comentario = it },
-                    label = { Text("Comentario (opcional)") },
+                    label = { Text(stringResource(R.string.reparaciones_rate_comment)) },
                     modifier = Modifier.fillMaxWidth(), minLines = 2, maxLines = 4
                 )
             }
         },
         confirmButton = {
-            Button(
-                onClick = {
-                    onEnviar(
-                        puntuacion.toShort(),
-                        comentario.ifBlank { null }
-                    )
-                },
-                enabled = puntuacion > 0)
-            {
-                Text("Enviar")
-            }
+            Button(onClick = {
+                onEnviar(puntuacion.toShort(), comentario.ifBlank { null })
+            }, enabled = puntuacion > 0) { Text(stringResource(R.string.action_send)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss)
-            {
-                Text("Cancelar")
-            }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         }
     )
 }
