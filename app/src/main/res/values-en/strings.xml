@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AutoElite</string>
+    <string name="app_tagline">Workshop management</string>
+    <string name="app_tagline_full">Comprehensive workshop management</string>
+
+    <!-- Bottom navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_citas">Bookings</string>
+    <string name="nav_vehiculos">Vehicles</string>
+    <string name="nav_reparaciones">Repairs</string>
+    <string name="nav_perfil">Profile</string>
+
+    <!-- Common actions -->
+    <string name="action_cancel">Cancel</string>
+    <string name="action_save">Save</string>
+    <string name="action_close">Close</string>
+    <string name="action_back">Back</string>
+    <string name="action_search">Search</string>
+    <string name="action_clear">Clear</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_accept">Accept</string>
+    <string name="action_reject">Reject</string>
+    <string name="action_send">Send</string>
+    <string name="action_refresh">Refresh</string>
+    <string name="action_all">All</string>
+
+    <!-- Login -->
+    <string name="login_title">Sign in</string>
+    <string name="login_email">Email address</string>
+    <string name="login_password">Password</string>
+    <string name="login_show_password">Show</string>
+    <string name="login_hide_password">Hide</string>
+    <string name="login_button">Sign in</string>
+    <string name="login_no_account">Don\'t have an account?</string>
+    <string name="login_register_link">Sign up</string>
+
+    <!-- Register -->
+    <string name="register_title">Create account</string>
+    <string name="register_subtitle">Join AutoElite</string>
+    <string name="register_description">Create your account to manage your bookings and vehicles</string>
+    <string name="register_name">First name</string>
+    <string name="register_surname">Last name</string>
+    <string name="register_confirm_password">Confirm password</string>
+    <string name="register_button">Create account</string>
+    <string name="register_has_account">Already have an account?</string>
+    <string name="register_login_link">Sign in</string>
+    <string name="register_passwords_mismatch">Passwords do not match</string>
+
+    <!-- Home -->
+    <string name="home_greeting">Hello, %1$s</string>
+    <string name="home_welcome">Welcome to your trusted workshop</string>
+    <string name="home_next_appointment">Next appointment</string>
+    <string name="home_service">Service</string>
+    <string name="home_quick_access">Quick access</string>
+    <string name="home_book_appointment">Book now</string>
+    <string name="home_book_subtitle">Schedule your visit</string>
+    <string name="home_repairs">Repairs</string>
+    <string name="home_repairs_subtitle">Live tracking</string>
+    <string name="home_vehicles">Vehicles</string>
+    <string name="home_vehicles_subtitle">Manage your fleet</string>
+    <string name="home_crm">CRM Points</string>
+    <string name="home_crm_subtitle">Redeem rewards</string>
+    <string name="home_invoices">Invoices</string>
+    <string name="home_invoices_subtitle">Pay online</string>
+    <string name="home_history">History</string>
+    <string name="home_history_subtitle">Your activity</string>
+    <string name="home_no_appointments">No upcoming bookings</string>
+    <string name="home_book_now">Book your next appointment now</string>
+    <string name="home_notifications">Notifications</string>
+    <string name="home_profile">Profile</string>
+    <string name="home_client">Customer</string>
+
+    <!--Citas-->
+    <string name="citas_title">My bookings</string>
+    <string name="citas_new">New booking</string>
+    <string name="citas_search_hint">Search by vehicle, type, date…</string>
+    <string name="citas_filter_pending">Pending</string>
+    <string name="citas_filter_confirmed">Confirmed</string>
+    <string name="citas_filter_cancelled">Cancelled</string>
+    <string name="citas_empty">You have no bookings yet</string>
+    <string name="citas_empty_filtered">No bookings match your filters</string>
+    <string name="citas_book_one">Book an appointment</string>
+    <string name="citas_count_one">%1$d booking</string>
+    <string name="citas_count_many">%1$d bookings</string>
+    <string name="citas_cancel_title">Cancel booking</string>
+    <string name="citas_cancel_confirm">Are you sure you want to cancel the booking on %1$s at %2$s?</string>
+    <string name="citas_cancel_button">Cancel booking</string>
+    <string name="citas_vehicle">Vehicle</string>
+    <string name="citas_date">Date</string>
+    <string name="citas_no_vehicles">You have no registered vehicles</string>
+    <string name="citas_available_times">Available times:</string>
+    <string name="citas_no_times">No available slots for this day.</string>
+    <string name="citas_select_date">Select a date to see available times</string>
+    <string name="citas_service_type">Service type</string>
+    <string name="citas_workshop_confirm">The workshop will confirm availability</string>
+    <string name="citas_request">Request</string>
+    <string name="citas_slot_available">Available</string>
+    <string name="citas_slot_selected">Selected</string>
+    <string name="citas_slot_occupied">Taken</string>
+
+    <!-- Vehicles -->
+    <string name="vehiculos_title">My vehicles</string>
+    <string name="vehiculos_add">Add</string>
+    <string name="vehiculos_empty">You have no registered vehicles</string>
+    <string name="vehiculos_add_vehicle">Add vehicle</string>
+    <string name="vehiculos_update_km">Update km</string>
+    <string name="vehiculos_delete_title">Delete vehicle</string>
+    <string name="vehiculos_delete_confirm">Are you sure you want to delete the %1$s %2$s (%3$s)?</string>
+    <string name="vehiculos_delete_warning">\n\nThis action cannot be undone.</string>
+    <string name="vehiculos_update_km_title">Update mileage</string>
+    <string name="vehiculos_current_km">Current mileage: %1$d km</string>
+    <string name="vehiculos_new_km">New mileage</string>
+    <string name="vehiculos_km_suffix">km</string>
+    <string name="vehiculos_brand">Brand</string>
+    <string name="vehiculos_model">Model</string>
+    <string name="vehiculos_year">Year</string>
+    <string name="vehiculos_plate">Plate number</string>
+    <string name="vehiculos_mileage">Mileage</string>
+    <string name="vehiculos_invalid_km">Enter a valid number</string>
+    <string name="vehiculos_negative_km">Mileage cannot be negative</string>
+    <string name="vehiculos_lower_km">Mileage cannot be lower than current (%1$d km)</string>
+
+    <!-- Repairs -->
+    <string name="reparaciones_title">My repairs</string>
+    <string name="reparaciones_search_hint">Search by vehicle, plate, mechanic…</string>
+    <string name="reparaciones_filter_submitted">Submitted</string>
+    <string name="reparaciones_filter_in_progress">In progress</string>
+    <string name="reparaciones_filter_finished">Finished</string>
+    <string name="reparaciones_filter_confirmed">Confirmed</string>
+    <string name="reparaciones_filter_rejected">Rejected</string>
+    <string name="reparaciones_empty">No active repairs</string>
+    <string name="reparaciones_empty_filtered">No repairs found</string>
+    <string name="reparaciones_count_one">%1$d repair</string>
+    <string name="reparaciones_count_many">%1$d repairs</string>
+    <string name="reparaciones_mechanic">Mechanic: %1$s</string>
+    <string name="reparaciones_cost">Cost: %1$s €</string>
+    <string name="reparaciones_vehicle_status">Vehicle status</string>
+    <string name="reparaciones_rejected">Repair rejected</string>
+    <string name="reparaciones_step_submitted">Submitted</string>
+    <string name="reparaciones_step_in_progress">In progress</string>
+    <string name="reparaciones_step_finished">Finished</string>
+    <string name="reparaciones_step_confirmed">Confirmed</string>
+    <string name="reparaciones_workshop_question">The workshop has submitted this repair. Do you want to accept it?</string>
+    <string name="reparaciones_rate">Rate repair</string>
+    <string name="reparaciones_rated">Review submitted</string>
+    <string name="reparaciones_accept_title">Accept repair</string>
+    <string name="reparaciones_accept_confirm">Do you accept the repair for %1$s · %2$s at %3$s €?\n\nThe workshop will start working on your vehicle.</string>
+    <string name="reparaciones_reject_title">Reject repair</string>
+    <string name="reparaciones_reject_confirm">Are you sure you want to reject the repair for %1$s · %2$s?\n\nThis action cannot be undone.</string>
+    <string name="reparaciones_rate_title">Rate repair</string>
+    <string name="reparaciones_rate_question">How was your experience?</string>
+    <string name="reparaciones_rate_1">Very bad</string>
+    <string name="reparaciones_rate_2">Bad</string>
+    <string name="reparaciones_rate_3">Average</string>
+    <string name="reparaciones_rate_4">Good</string>
+    <string name="reparaciones_rate_5">Excellent</string>
+    <string name="reparaciones_rate_comment">Comment (optional)</string>
+    <string name="reparaciones_stars">%1$d stars</string>
+
+    <!-- Invoices -->
+    <string name="facturas_title">My invoices</string>
+    <string name="facturas_search_hint">Search by invoice no., date, amount…</string>
+    <string name="facturas_filter_pending">Pending</string>
+    <string name="facturas_filter_paid">Paid</string>
+    <string name="facturas_empty">You have no invoices yet</string>
+    <string name="facturas_empty_filtered">No invoices found</string>
+    <string name="facturas_count_one">%1$d invoice</string>
+    <string name="facturas_count_many">%1$d invoices</string>
+    <string name="facturas_method">Method: %1$s</string>
+    <string name="facturas_paid">✓ Paid</string>
+    <string name="facturas_pending">Pending</string>
+    <string name="facturas_generating">Generating…</string>
+    <string name="facturas_share_pdf">Share PDF</string>
+    <string name="facturas_paying">Paying…</string>
+    <string name="facturas_pay">Pay</string>
+    <string name="facturas_share_subject">Invoice %1$s - AutoElite</string>
+    <string name="facturas_share_body">Please find attached invoice %1$s for %2$s €.</string>
+    <string name="facturas_pdf_error">Error generating PDF</string>
+
+    <!-- CRM / Points -->
+    <string name="crm_title">My points</string>
+    <string name="crm_points">%1$d pts</string>
+    <string name="crm_level">Level: %1$s</string>
+    <string name="crm_level_gold">Gold 🥇</string>
+    <string name="crm_level_silver">Silver 🥈</string>
+    <string name="crm_level_bronze">Bronze 🥉</string>
+    <string name="crm_max_level">You have reached the highest level</string>
+    <string name="crm_next_gold">Gold — %1$d points to go</string>
+    <string name="crm_next_silver">Silver — %1$d points to go</string>
+    <string name="crm_rewards_title">Available rewards</string>
+    <string name="crm_redeem">Redeem</string>
+    <string name="crm_info">Earn points with every repair. €1 spent = 1 point earned.</string>
+    <string name="crm_redeem_title">Redeem reward</string>
+    <string name="crm_confirm_redeem">Confirm redemption</string>
+    <string name="crm_redeeming">Redeeming…</string>
+    <string name="crm_current_points">Your current points:</string>
+    <string name="crm_reward_cost">Reward cost:</string>
+    <string name="crm_remaining_points">Remaining points:</string>
+    <string name="crm_email_code">You will receive a code by email to use on your next visit.</string>
+    <string name="crm_reward_1_title">10%% discount</string>
+    <string name="crm_reward_1_desc">On your next repair</string>
+    <string name="crm_reward_2_title">Free inspection</string>
+    <string name="crm_reward_2_desc">Full inspection at no cost</string>
+    <string name="crm_reward_3_title">Oil change</string>
+    <string name="crm_reward_3_desc">Labour included</string>
+    <string name="crm_reward_4_title">25%% discount</string>
+    <string name="crm_reward_4_desc">On any service</string>
+
+    <!-- History -->
+    <string name="historial_title">History</string>
+    <string name="historial_empty">No activity yet</string>
+    <string name="historial_empty_subtitle">Your bookings, repairs and payments will appear here</string>
+    <string name="historial_appointments">Bookings</string>
+    <string name="historial_repairs">Repairs</string>
+    <string name="historial_invoices">Invoices</string>
+    <string name="historial_service">Service appointment</string>
+    <string name="historial_paid">Paid</string>
+    <string name="historial_pending_payment">Pending payment</string>
+
+    <!-- Months -->
+    <string name="month_01">January</string>
+    <string name="month_02">February</string>
+    <string name="month_03">March</string>
+    <string name="month_04">April</string>
+    <string name="month_05">May</string>
+    <string name="month_06">June</string>
+    <string name="month_07">July</string>
+    <string name="month_08">August</string>
+    <string name="month_09">September</string>
+    <string name="month_10">October</string>
+    <string name="month_11">November</string>
+    <string name="month_12">December</string>
+    <string name="month_other">Other</string>
+
+    <!-- Generic statuses -->
+    <string name="estado_pendiente">Pending</string>
+    <string name="estado_confirmada">Confirmed</string>
+    <string name="estado_cancelada">Cancelled</string>
+    <string name="estado_en_proceso">In progress</string>
+    <string name="estado_terminada">Finished</string>
+
+    <!-- Notifications -->
+    <string name="notif_title">Notifications</string>
+    <string name="notif_mark_all_read">Mark all as read</string>
+    <string name="notif_empty">You have no notifications</string>
+    <string name="notif_empty_subtitle">Updates about your bookings,\nrepairs and invoices will appear here</string>
+
+    <!-- Profile -->
+    <string name="perfil_title">My profile</string>
+    <string name="perfil_user_default">User</string>
+    <string name="perfil_points">%1$d points earned</string>
+    <string name="perfil_appearance">Appearance</string>
+    <string name="perfil_dark_mode">Dark mode</string>
+    <string name="perfil_language">Language</string>
+    <string name="perfil_account">Account</string>
+    <string name="perfil_edit_data">Edit personal details</string>
+    <string name="perfil_change_password">Change password</string>
+    <string name="perfil_notifications">Notifications</string>
+    <string name="perfil_support">Support</string>
+    <string name="perfil_location">Workshop location</string>
+    <string name="perfil_contact">Contact the workshop</string>
+    <string name="perfil_about">About AutoElite</string>
+    <string name="perfil_logout">Sign out</string>
+    <string name="perfil_logout_title">Sign out?</string>
+    <string name="perfil_logout_message">You will be signed out on this device.</string>
+    <string name="perfil_logout_confirm">Sign out</string>
+
+    <!-- Edit details -->
+    <string name="edit_title">Edit details</string>
+    <string name="edit_phone">Phone</string>
+
+    <!-- Change password -->
+    <string name="password_current">Current password</string>
+    <string name="password_new">New password</string>
+    <string name="password_confirm_new">Confirm new password</string>
+    <string name="password_mismatch">Passwords do not match</string>
+    <string name="password_fill_all">Fill in all fields</string>
+    <string name="password_min_length">Minimum 6 characters</string>
+    <string name="password_no_match">Passwords don\'t match</string>
+    <string name="password_change">Change</string>
+
+    <!-- Notification settings -->
+    <string name="notif_config_citas">Bookings and reminders</string>
+    <string name="notif_config_reparaciones">Repair status</string>
+    <string name="notif_config_promos">Promotions and offers</string>
+    <string name="notif_config_autosave">Saved automatically</string>
+
+    <!-- Location -->
+    <string name="location_title">Location</string>
+    <string name="location_name">AutoElite Workshop</string>
+    <string name="location_address">Calle de Ejemplo 42, 28001 Madrid</string>
+    <string name="location_hours">Mon-Fri: 8:00–18:00\nSat: 9:00–14:00</string>
+    <string name="location_open_maps">Open in Maps</string>
+
+    <!-- Contact -->
+    <string name="contact_title">Contact</string>
+    <string name="contact_phone">Call: +34 912 345 678</string>
+    <string name="contact_email">Email: info@autoelite.es</string>
+    <string name="contact_whatsapp">WhatsApp</string>
+
+    <!-- About -->
+    <string name="about_title">About AutoElite</string>
+    <string name="about_version">Version</string>
+    <string name="about_developer">Developer</string>
+    <string name="about_platform">Platform</string>
+    <string name="about_backend">Backend</string>
+    <string name="about_version_value">1.0.0</string>
+    <string name="about_developer_value">TFG - AutoElite</string>
+    <string name="about_platform_value">Android (Compose)</string>
+    <string name="about_backend_value">Spring Boot + Firebase</string>
+    <string name="about_description">Application developed as a Final Degree Project for centralised management of bookings, vehicles, repairs and billing.</string>
+
+    <!-- Language -->
+    <string name="language_title">Select language</string>
+    <string name="language_restart_message">The app will restart to apply the language change.</string>
+
+    <!-- Common errors -->
+    <string name="error_fill_fields">Fill in all fields</string>
+    <string name="error_passwords_mismatch">Passwords do not match</string>
+    <string name="error_password_short">Minimum 6 characters</string>
+    <string name="error_no_connection">No connection to the server</string>
+    <string name="error_loading">Error loading data</string>
+</resources>
