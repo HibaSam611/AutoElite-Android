@@ -150,13 +150,15 @@ fun CrmScreen(
     }
 
     recompensaACanjear?.let { recompensa ->
+        val nombreRecompensa = stringResource(recompensa.tituloResId)
+
         CanjearConfirmDialog(
             recompensa = recompensa,
             puntosActuales = puntos,
             canjeando = canjeando,
             onConfirmar = {
                 viewModel.canjearRecompensa(
-                    nombreRecompensa = stringResource(recompensa.tituloResId),
+                    nombreRecompensa = nombreRecompensa,
                     puntosRequeridos = recompensa.puntos
                 )
                 recompensaACanjear = null
@@ -201,11 +203,13 @@ private fun RecompensaCard(
         }
     }
 }
-
 @Composable
 private fun CanjearConfirmDialog(
-    recompensa: RecompensaUi, puntosActuales: Int,
-    canjeando: Boolean, onConfirmar: @Composable () -> Unit, onDismiss: () -> Unit
+    recompensa: RecompensaUi,
+    puntosActuales: Int,
+    canjeando: Boolean,
+    onConfirmar: () -> Unit,
+    onDismiss: () -> Unit
 ) {
     val titulo = stringResource(recompensa.tituloResId)
     val descripcion = stringResource(recompensa.descripcionResId)
@@ -253,7 +257,7 @@ private fun CanjearConfirmDialog(
             }
         },
         confirmButton = {
-            Button(onClick = onConfirmar as () -> Unit, enabled = !canjeando) {
+            Button(onClick = onConfirmar, enabled = !canjeando) {
                 if (canjeando) {
                     CircularProgressIndicator(modifier = Modifier.size(18.dp),
                         color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
