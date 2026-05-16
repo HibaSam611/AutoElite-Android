@@ -289,7 +289,7 @@
     <!-- Localización -->
     <string name="location_title">Localización</string>
     <string name="location_name">AutoElite Taller</string>
-    <string name="location_address">Calle de Ejemplo 42, 28001 Madrid</string>
+    <string name="location_address">Avenida de las Vascongadas, Getafe</string>
     <string name="location_hours">Lun-Vie: 8:00–18:00\nSáb: 9:00–14:00</string>
     <string name="location_open_maps">Abrir en Maps</string>
 

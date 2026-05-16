@@ -289,7 +289,7 @@
     <!-- Location -->
     <string name="location_title">Location</string>
     <string name="location_name">AutoElite Workshop</string>
-    <string name="location_address">Calle de Ejemplo 42, 28001 Madrid</string>
+    <string name="location_address">Avenida de las Vascongadas, Getafe</string>
     <string name="location_hours">Mon-Fri: 8:00–18:00\nSat: 9:00–14:00</string>
     <string name="location_open_maps">Open in Maps</string>
 
