@@ -15,6 +15,7 @@ Cliente Android nativo de **AutoElite**, un sistema de gesti√≥n de talleres mec√
 <img width="389" height="834" alt="Captura de pantalla 2026-05-11 163053" src="https://github.com/user-attachments/assets/32917292-1c79-4cd8-958b-eb9200db71dc" />
 <img width="399" height="840" alt="Captura de pantalla 2026-05-11 162845" src="https://github.com/user-attachments/assets/63fce990-126a-40ae-bc06-ad96e635164f" />
 <img width="400" height="840" alt="Captura de pantalla 2026-05-11 163312" src="https://github.com/user-attachments/assets/3a5adde9-87fa-486f-9f05-76fcd1159d03" />
+<img width="396" height="834" alt="Captura de pantalla 2026-05-11 163333" src="https://github.com/user-attachments/assets/ca714fc5-c708-451e-9d27-4e1f1f31d744" />
 
 
 
