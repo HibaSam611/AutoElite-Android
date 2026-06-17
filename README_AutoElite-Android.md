@@ -65,12 +65,13 @@ La app sigue una organización por capas típica de Compose: pantallas (`UI`) qu
 3. Añade tu propio `google-services.json` (descargado desde la consola de Firebase) en `app/`.
 4. Configura en `local.properties` la URL base del backend y tu clave pública de Stripe:
    ```properties
-   BASE_URL=https://tu-backend-autoelite/
+   BASE_URL=https:https://github.com/Sergio-no/TFG-Backend.git
    STRIPE_PUBLISHABLE_KEY=pk_test_xxxxxxxx
    ```
 5. Sincroniza Gradle y ejecuta sobre un emulador o dispositivo físico.
 
 > El backend de AutoElite (Spring Boot) se encuentra en un repositorio independiente y debe estar levantado para que la app funcione por completo.
+> Repo del Backend: https://github.com/Sergio-no/TFG-Backend.git
 
 ## Autoría
 
