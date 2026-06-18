@@ -65,7 +65,7 @@ La app sigue una organización por capas típica de Compose: pantallas (`UI`) qu
 3. Añade tu propio `google-services.json` (descargado desde la consola de Firebase) en `app/`.
 4. Configura en `local.properties` la URL base del backend y tu clave pública de Stripe:
    ```properties
-   BASE_URL=https:https://github.com/Sergio-no/TFG-Backend.git
+   BASE_URL= http://10.0.2.2:8080/
    STRIPE_PUBLISHABLE_KEY=pk_test_xxxxxxxx
    ```
 5. Sincroniza Gradle y ejecuta sobre un emulador o dispositivo físico.
